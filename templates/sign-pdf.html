@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-6 flex-grow overflow-y-auto">
+        <div class="mb-4 text-[#6366f1] bg-indigo-50 w-fit rounded-xl p-4 shadow-sm border border-indigo-100 mx-auto">
+            <i class="fa-solid fa-signature text-[40px]"></i>
+        </div>
+        <h2 class="text-[22px] font-bold text-white mb-6 text-center">{{ tool.title }}</h2>
+        
+        <div class="w-full text-left mb-6">
+            <label class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 block">Your Full Name</label>
+            <div class="bg-[#1e293b] rounded-xl border border-slate-800 p-3 focus-within:border-[#6366f1] transition-all shadow-sm">
+                <input type="text" name="sign_text" id="sign_text" placeholder="John Doe" value="" class="w-full bg-transparent outline-none text-white font-bold text-[16px] italic">
+            </div>
+        </div>
+
+        <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Signature Position</h3>
+        <div class="grid grid-cols-2 gap-2 mb-6">
+            <label class="cursor-pointer">
+                <input type="radio" name="position" value="bottom_right" class="peer hidden" checked onchange="document.getElementById('backend-position').value='bottom_right'">
+                <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#6366f1] peer-checked:bg-indigo-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Bottom Right</span>
+                </div>
+            </label>
+            <label class="cursor-pointer">
+                <input type="radio" name="position" value="bottom_left" class="peer hidden" onchange="document.getElementById('backend-position').value='bottom_left'">
+                <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#6366f1] peer-checked:bg-indigo-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Bottom Left</span>
+                </div>
+            </label>
+            <label class="cursor-pointer">
+                <input type="radio" name="position" value="top_right" class="peer hidden" onchange="document.getElementById('backend-position').value='top_right'">
+                <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#6366f1] peer-checked:bg-indigo-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Top Right</span>
+                </div>
+            </label>
+            <label class="cursor-pointer">
+                <input type="radio" name="position" value="top_left" class="peer hidden" onchange="document.getElementById('backend-position').value='top_left'">
+                <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#6366f1] peer-checked:bg-indigo-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Top Left</span>
+                </div>
+            </label>
+        </div>
+
+        <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Apply To</h3>
+        <div class="flex gap-2">
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="page_choice" value="last" class="peer hidden" checked onchange="document.getElementById('backend-page').value='last'">
+                <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#6366f1] peer-checked:bg-indigo-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Last Page</span>
+                </div>
+            </label>
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="page_choice" value="all" class="peer hidden" onchange="document.getElementById('backend-page').value='all'">
+                <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#6366f1] peer-checked:bg-indigo-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">All Pages</span>
+                </div>
+            </label>
+        </div>
+
+        <input type="hidden" name="position" id="backend-position" value="bottom_right">
+        <input type="hidden" name="page_choice" id="backend-page" value="last">
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#6366f1] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#4f46e5] transition">
+            Sign PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Applying Digital Signature...', 
+        successTitle: 'PDF Signed Successfully!', 
+        btnText: 'Download Signed PDF' 
+    };
+
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-signature text-3xl"></i> <span id="download-btn-text">Download Signed PDF</span>';
+        downloadBtn.className = "bg-[#6366f1] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#4f46e5] transition flex items-center gap-4 mb-12";
+    }
+{% endblock %}

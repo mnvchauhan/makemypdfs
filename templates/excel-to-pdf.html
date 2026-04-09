@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#1d6f42] bg-green-50 w-fit rounded-xl p-6 shadow-sm border border-green-100 flex items-center gap-2">
+            <i class="fa-solid fa-file-excel text-[50px]"></i>
+            <i class="fa-solid fa-arrow-right text-gray-300 text-[20px] mx-2"></i>
+            <i class="fa-solid fa-file-pdf text-[#e5322d] text-[50px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Convert your EXCEL spreadsheets to PDF easily. We automatically adjust the page size so your tables never get cut off!
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#1d6f42] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#144c2d] transition">
+            Convert to PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // Config for Excel to PDF
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Converting Spreadsheets to PDF...', 
+        successTitle: 'Conversion Successful!', 
+        btnText: 'Download PDF' 
+    };
+
+    // Safe UI Updates (Crash-Proof)
+    try {
+        const fileInput = document.getElementById('file-upload');
+        if (fileInput) fileInput.accept = ".xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        // "Select PDF files" ko "Select EXCEL files" banayenge
+        const uploadLabel = document.querySelector('label[for="file-upload"]');
+        if (uploadLabel) {
+            uploadLabel.innerHTML = '<i class="fa-solid fa-file-excel"></i> Select EXCEL files';
+            uploadLabel.className = "bg-[#1d6f42] text-white cursor-pointer text-[24px] font-bold py-5 px-10 rounded-lg shadow-lg hover:bg-[#144c2d] transition flex items-center gap-3 w-fit mx-auto";
+        }
+    } catch(e) {
+        console.error("UI Update Error:", e);
+    }
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#1d6f42] bg-green-50 w-fit rounded-xl p-6 shadow-sm border border-green-100">
+            <i class="fa-solid fa-file-excel text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Pull tabular data straight from your PDFs into Excel spreadsheets in a few short seconds.
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#1d6f42] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#144c2d] transition">
+            Convert to EXCEL <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // Config for PDF to Excel Tool
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Extracting tables to Excel...', 
+        successTitle: 'Conversion Successful!', 
+        btnText: 'Download EXCEL' 
+    };
+
+    // Update Download Button UI
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-excel text-3xl"></i> <span id="download-btn-text">Download EXCEL</span>';
+        downloadBtn.className = "bg-[#1d6f42] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#144c2d] transition flex items-center gap-4 mb-12";
+    }
+{% endblock %}

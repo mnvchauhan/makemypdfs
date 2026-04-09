@@ -1,0 +1,9 @@
+uploads/
+venv/
+*.pyc
+__pycache__/
+uploads/
+venv/
+__pycache__/
+.venv 2/
+.venv 2/

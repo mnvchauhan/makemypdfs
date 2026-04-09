@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#0f172a]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#e5322d] bg-red-100 w-fit rounded-xl p-6 shadow-sm border border-red-200">
+            <i class="fa-solid fa-lock-open text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed mb-6">Enter the password of the PDF to remove the security permanently.</p>
+        
+        <div class="w-full bg-[#1e293b] rounded-lg p-4 border border-slate-800 shadow-sm focus-within:ring-2 ring-red-200 transition-all">
+            <label class="text-[11px] font-bold text-slate-400 uppercase flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-key"></i> PDF Password
+            </label>
+            <input type="password" name="pdf_password" placeholder="Enter password here..." class="w-full bg-transparent outline-none text-[15px] font-semibold text-white">
+        </div>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b] ">
+        <button type="submit" class="w-full bg-[#e5322d] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-[0_5px_15px_rgba(229,50,45,0.4)] hover:bg-[#cc2b26] transition hover:scale-[1.02] transition hover:scale-[1.02] transition">
+            Unlock PDF <i class="fa-solid fa-unlock ml-2"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 1, 
+        progressText: 'Unlocking your PDF...', 
+        successTitle: 'PDF has been unlocked!', 
+        btnText: 'Download Unlocked PDF' 
+    };
+{% endblock %}

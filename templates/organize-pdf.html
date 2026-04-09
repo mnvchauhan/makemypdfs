@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-slate-700 bg-slate-200 w-fit rounded-xl p-6 shadow-sm border border-slate-300">
+            <i class="fa-solid fa-table-cells-large text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Sort, delete and rotate PDF pages. Drag and drop the page thumbnails and sort them however you like.
+        </p>
+        
+        <input type="hidden" name="page_data" id="page_data" value="[]">
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-black transition">
+            Organize PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 1, // Ek baar mein 1 PDF ko hi organize karenge
+        progressText: 'Organizing your PDF...', 
+        successTitle: 'PDF Organized!', 
+        btnText: 'Download PDF' 
+    };
+
+    // UI Updates
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-pdf text-3xl"></i> <span id="download-btn-text">Download PDF</span>';
+        downloadBtn.className = "bg-slate-800 text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-black transition flex items-center gap-4 mb-12";
+    }
+
+    // Load SortableJS
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js';
+    script.onload = () => {
+        const fileListEl = document.getElementById('file-list');
+        if(fileListEl) {
+            new Sortable(fileListEl, {
+                animation: 150,
+                ghostClass: 'opacity-50',
+                cursor: 'move',
+                delay: 100, // Thoda delay taaki buttons click ho sakein
+                delayOnTouchOnly: true
+            });
+        }
+    };
+    document.head.appendChild(script);
+
+    // Custom UI Renderer For Organizing
+    window.customRenderFiles = function() {
+        const file = dt.files[0];
+        if (!file) return;
+
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '<div class="text-[18px] font-bold mt-20 text-slate-500 w-full text-center flex flex-col items-center"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-[#e5322d] mb-4"></i> Loading Pages...</div>';
+
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+            const typedarray = new Uint8Array(this.result);
+            pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                fileList.innerHTML = ''; 
+                
+                // PDF ke har page ka UI banayenge
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const thumb = document.createElement('div');
+                    // data-page aur data-rotation backend ko command denge
+                    thumb.className = 'page-item group w-[180px] h-[250px] bg-[#1e293b] border border-slate-800 flex flex-col items-center justify-center p-3 relative shadow-sm rounded-lg m-2 cursor-grab hover:border-slate-800 transition-colors';
+                    thumb.setAttribute('data-page', i);
+                    thumb.setAttribute('data-rotation', '0');
+                    
+                    thumb.innerHTML = `
+                        <div class="absolute top-2 left-2 bg-gray-800 text-white text-[11px] font-bold px-2 py-0.5 rounded z-20 page-num-badge">${i}</div>
+                        
+                        <div class="absolute top-2 right-2 flex gap-1 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button type="button" onclick="rotatePage(this)" class="bg-blue-500 text-white w-7 h-7 rounded flex items-center justify-center hover:bg-blue-600 shadow"><i class="fa-solid fa-rotate-right text-xs"></i></button>
+                            <button type="button" onclick="deletePage(this)" class="bg-red-500 text-white w-7 h-7 rounded flex items-center justify-center hover:bg-red-600 shadow"><i class="fa-solid fa-trash text-xs"></i></button>
+                        </div>
+                        
+                        <div class="h-[190px] w-full flex items-center justify-center overflow-hidden">
+                            <canvas id="canvas-${i}" class="max-w-full max-h-full shadow-sm transition-transform duration-300 pointer-events-none"></canvas>
+                        </div>
+                        <span class="text-[11px] font-semibold text-center w-full truncate text-slate-400 mt-2">Page ${i}</span>
+                    `;
+                    fileList.appendChild(thumb);
+
+                    // Canvas par PDF page draw karo
+                    pdf.getPage(i).then(page => {
+                        const canvas = document.getElementById(`canvas-${i}`);
+                        const context = canvas.getContext('2d');
+                        const viewport = page.getViewport({scale: 0.5}); 
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        page.render({canvasContext: context, viewport: viewport});
+                    });
+                }
+            });
+        };
+        fileReader.readAsArrayBuffer(file);
+    };
+
+    // UI Action: Page Delete
+    window.deletePage = function(btn) {
+        const item = btn.closest('.page-item');
+        item.style.transform = 'scale(0)';
+        setTimeout(() => { item.remove(); updatePageNumbers(); }, 200);
+    }
+
+    // UI Action: Page Rotate
+    window.rotatePage = function(btn) {
+        const item = btn.closest('.page-item');
+        let currentRot = parseInt(item.getAttribute('data-rotation'));
+        let newRot = (currentRot + 90) % 360;
+        item.setAttribute('data-rotation', newRot);
+        item.querySelector('canvas').style.transform = `rotate(${newRot}deg)`;
+    }
+
+    // Badge Numbers update karne ke liye (Visual only)
+    function updatePageNumbers() {
+        const badges = document.querySelectorAll('.page-num-badge');
+        badges.forEach((badge, index) => {
+            badge.innerText = index + 1;
+        });
+    }
+
+    // SMART SUBMIT: Form submit hone se pehle DOM se naya order uthao
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('tool-form');
+        if(form) {
+            form.addEventListener('submit', function(e) {
+                const domItems = document.querySelectorAll('.page-item');
+                let finalData = [];
+                
+                domItems.forEach(item => {
+                    finalData.push({
+                        page: item.getAttribute('data-page'), // Original page number
+                        rotation: item.getAttribute('data-rotation') // Naya rotation angle
+                    });
+                });
+                
+                // JSON banakar hidden input mein daal do
+                document.getElementById('page_data').value = JSON.stringify(finalData);
+            }, true);
+        }
+    });
+{% endblock %}

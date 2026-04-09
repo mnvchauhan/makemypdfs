@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#0f172a] text-white overflow-hidden">
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-slate-800 bg-[#1e293b]/50">
+        <h2 class="text-[18px] font-bold text-white flex items-center gap-2"><i class="fa-solid fa-compress text-[#e5322d]"></i> Compression Level</h2>
+    </div>
+
+    <!-- Options Area -->
+    <div class="p-6 flex-grow overflow-y-auto no-scrollbar">
+        <input type="hidden" name="compression_level" id="compression_level" value="recommended">
+        
+        <div id="level-extreme" onclick="selectLevel('extreme')" class="bg-[#1e293b] p-4 rounded-2xl mb-4 cursor-pointer border-2 border-transparent hover:border-slate-600 transition-all group flex justify-between items-center shadow-md">
+            <div>
+                <h3 class="font-bold text-slate-200 text-[14px] group-hover:text-white transition-colors">EXTREME COMPRESSION</h3>
+                <p class="text-[12px] text-slate-500 font-semibold mt-1">Less quality, high compression</p>
+            </div>
+            <i class="fa-solid fa-circle-check text-emerald-500 text-2xl hidden check-icon drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]"></i>
+        </div>
+        
+        <div id="level-recommended" onclick="selectLevel('recommended')" class="bg-gradient-to-br from-[#e5322d]/10 to-transparent p-4 rounded-2xl mb-4 cursor-pointer border-2 border-[#e5322d] transition-all group flex justify-between items-center shadow-md">
+            <div>
+                <h3 class="font-bold text-white text-[14px]">RECOMMENDED COMPRESSION</h3>
+                <p class="text-[12px] text-slate-400 font-semibold mt-1">Good quality, good compression</p>
+            </div>
+            <i class="fa-solid fa-circle-check text-emerald-500 text-2xl check-icon drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]"></i>
+        </div>
+        
+        <div id="level-less" onclick="selectLevel('less')" class="bg-[#1e293b] p-4 rounded-2xl mb-4 cursor-pointer border-2 border-transparent hover:border-slate-600 transition-all group flex justify-between items-center shadow-md">
+            <div>
+                <h3 class="font-bold text-slate-200 text-[14px] group-hover:text-white transition-colors">LESS COMPRESSION</h3>
+                <p class="text-[12px] text-slate-500 font-semibold mt-1">High quality, less compression</p>
+            </div>
+            <i class="fa-solid fa-circle-check text-emerald-500 text-2xl hidden check-icon drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]"></i>
+        </div>
+    </div>
+
+    <!-- Submit Button Area -->
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#0f172a] shrink-0">
+        <button type="submit" class="w-full bg-[#e5322d] text-white font-bold py-4 rounded-xl text-[18px] flex items-center justify-center gap-3 shadow-[0_5px_15px_rgba(229,50,45,0.4)] hover:bg-[#cc2b26] transition hover:scale-[1.02]">
+            Compress PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { minFiles: 1, maxFiles: 0, progressText: 'Compressing PDF...', successTitle: 'PDFs have been compressed!', btnText: 'Download compressed PDF' };
+
+    // Sidebar Level Selection
+    function selectLevel(level) {
+        document.getElementById('compression_level').value = level;
+        ['extreme', 'recommended', 'less'].forEach(l => {
+            const box = document.getElementById(`level-${l}`);
+            const check = box.querySelector('.check-icon');
+            const title = box.querySelector('h3');
+            
+            if (l === level) {
+                box.classList.remove('bg-white', 'border-transparent');
+                box.classList.add('bg-[#f0f5fa]', 'border-[#e5322d]');
+                check.classList.remove('hidden');
+                title.classList.remove('group-hover:text-[#e5322d]');
+            } else {
+                box.classList.add('bg-white', 'border-transparent');
+                box.classList.remove('bg-[#f0f5fa]', 'border-[#e5322d]');
+                check.classList.add('hidden');
+                title.classList.add('group-hover:text-[#e5322d]');
+            }
+        });
+    }
+
+    // Download screen pe Circular UI insert karna
+    const downloadTitle = document.getElementById('download-title');
+    const statsDiv = document.createElement('div');
+    statsDiv.id = 'compression-stats';
+    statsDiv.className = 'flex items-center justify-center gap-6 mb-10 hidden';
+    statsDiv.innerHTML = `
+        <div class="relative w-20 h-20 flex items-center justify-center bg-white rounded-full shadow-sm">
+            <svg class="w-full h-full transform -rotate-90 absolute" viewBox="0 0 36 36">
+                <path class="text-gray-200" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path id="circle-progress" class="text-[#e5322d]" stroke-dasharray="0, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            </svg>
+            <span class="text-[15px] font-bold absolute text-[#33333b]" id="savings-circle-text">0%</span>
+        </div>
+        <div class="text-left text-[#33333b]">
+            <p class="text-[20px] font-bold">Your PDFs are now <span id="savings-text" class="text-[#e5322d]">0%</span> smaller!</p>
+            <p class="text-[15px] text-gray-500 font-semibold mt-1" id="size-text">0 KB -> 0 KB</p>
+        </div>
+    `;
+    downloadTitle.insertAdjacentElement('afterend', statsDiv);
+
+    // XHR Interceptor (Base.html ko disturb kiye bina response pakadna)
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+        this.addEventListener('load', function() {
+            if (url && url.includes('/api/compress') && this.status === 200) {
+                const res = JSON.parse(this.responseText);
+                if(res.original_size) {
+                    const origKB = (res.original_size / 1024).toFixed(2);
+                    const newKB = (res.new_size / 1024).toFixed(2);
+                    const savings = res.savings;
+                    
+                    document.getElementById('savings-text').innerText = savings + '%';
+                    document.getElementById('savings-circle-text').innerText = savings + '%';
+                    document.getElementById('size-text').innerText = origKB + ' KB -> ' + newKB + ' KB';
+                    
+                    // Progress Circle Animation
+                    setTimeout(() => {
+                        document.getElementById('circle-progress').style.transition = 'stroke-dasharray 1s ease-out';
+                        document.getElementById('circle-progress').setAttribute('stroke-dasharray', savings + ', 100');
+                    }, 100);
+                    
+                    document.getElementById('compression-stats').classList.remove('hidden');
+                }
+            }
+        });
+        originalOpen.apply(this, arguments);
+    };
+{% endblock %}

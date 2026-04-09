@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#d24726] bg-red-50 w-fit rounded-xl p-6 shadow-sm border border-red-100 flex items-center gap-2">
+            <i class="fa-solid fa-file-powerpoint text-[50px]"></i>
+            <i class="fa-solid fa-arrow-right text-gray-300 text-[20px] mx-2"></i>
+            <i class="fa-solid fa-file-pdf text-[#e5322d] text-[50px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Make PPT and PPTX slideshows easy to view by converting them to PDF. All fonts and layouts will be preserved perfectly.
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#d24726] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#b53a1d] transition">
+            Convert to PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // 1. Config for PPT to PDF
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Converting Presentation to PDF...', 
+        successTitle: 'Conversion Successful!', 
+        btnText: 'Download PDF' 
+    };
+
+    // 2. Safe UI Updates
+    try {
+        const fileInput = document.getElementById('file-upload');
+        if (fileInput) fileInput.accept = ".ppt, .pptx, application/vnd.ms-powerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+        // "Select PDF files" ko "Select POWERPOINT files" banayenge
+        const uploadLabel = document.querySelector('label[for="file-upload"]');
+        if (uploadLabel) {
+            uploadLabel.innerHTML = '<i class="fa-solid fa-file-powerpoint"></i> Select POWERPOINT files';
+            uploadLabel.className = "bg-[#d24726] text-white cursor-pointer text-[24px] font-bold py-5 px-10 rounded-lg shadow-lg hover:bg-[#b53a1d] transition flex items-center gap-3 w-fit mx-auto";
+        }
+    } catch(e) {
+        console.error("UI Update Error:", e);
+    }
+
+    // 3. CUSTOM RENDERER FOR POWERPOINT (Crash Rokne Ke Liye)
+    window.customRenderFiles = function() {
+        const fileList = document.getElementById('file-list');
+        if (!fileList || typeof dt === 'undefined') return;
+        
+        fileList.innerHTML = '';
+        
+        for (let i = 0; i < dt.files.length; i++) {
+            const file = dt.files[i];
+            const thumb = document.createElement('div');
+            // Premium PPT Card UI
+            thumb.className = 'w-[160px] h-[200px] bg-[#1e293b] border border-slate-800 flex flex-col items-center justify-center p-3 relative shadow-sm rounded-lg m-2 hover:border-[#d24726] transition-colors';
+            
+            thumb.innerHTML = `
+                <div class="h-[140px] w-full flex items-center justify-center mb-2 bg-red-50 rounded-lg border border-red-100">
+                    <i class="fa-solid fa-file-powerpoint text-[60px] text-[#d24726]"></i>
+                </div>
+                <span class="text-[12px] font-bold text-center w-full truncate text-slate-600">${file.name}</span>
+            `;
+            fileList.appendChild(thumb);
+        }
+    };
+{% endblock %}

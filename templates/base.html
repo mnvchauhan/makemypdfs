@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>{{ tool.title }} | MakeMyPDFs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .dropzone { background-color: rgba(30, 41, 59, 0.4); border: 2px dashed #334155; transition: all 0.3s ease; }
+        .dropzone:hover, .dropzone.dragover { background-color: rgba(229, 50, 45, 0.05); border-color: #e5322d; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        @media (max-width: 768px) {
+            body { background-color: #000000; padding-bottom: 85px; }
+            .dropzone { background-color: #18181b; border: 2px dashed #27272a; padding: 40px 20px !important; border-radius: 24px !important;}
+            .desktop-only { display: none !important; }
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="antialiased selection:bg-[#e5322d] selection:text-white flex flex-col min-h-screen">
+
+    <!-- DESKTOP HEADER -->
+    <header class="bg-[#020617]/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-[100] desktop-only">
+        <div class="max-w-[1600px] mx-auto flex items-center justify-between px-4 lg:px-10 h-24">
+            <div class="flex items-center gap-8">
+                <a href="/" class="flex items-center gap-4 text-[28px] font-black tracking-tighter text-white">
+                    <div class="bg-[#e5322d] text-white w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-red-500/20">
+                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                    </div>
+                    <span>MakeMy<span class="text-[#e5322d]">PDFs</span></span>
+                </a>
+                <nav class="hidden lg:flex gap-6 text-[14px] font-bold text-slate-300">
+                    <a href="/tool/merge" class="hover:text-white transition">MERGE PDF</a>
+                    <a href="/tool/split" class="hover:text-white transition">SPLIT PDF</a>
+                    <a href="/tool/compress" class="hover:text-white transition">COMPRESS PDF</a>
+                </nav>
+            </div>
+            <div class="flex items-center gap-4 text-[15px] font-bold">
+                <a href="#" class="text-slate-300 hover:text-white transition hidden md:block">Login</a>
+                <a href="{% url 'dashboard' %}" class="bg-[#1e293b] text-white px-6 py-2.5 rounded-lg hover:bg-slate-700 transition">Sign up</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MOBILE HEADER -->
+    <div class="md:hidden flex items-center justify-between px-4 pt-6 pb-2">
+        <a href="/" class="text-slate-400 hover:text-white transition w-10 h-10 flex items-center justify-center bg-[#18181b] rounded-full border border-[#27272a]">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+        </a>
+        <div class="text-[18px] font-bold text-white tracking-tight">{{ tool.title }}</div>
+        <div class="w-10"></div>
+    </div>
+
+    <main class="flex-grow flex flex-col relative overflow-hidden">
+        <!-- Ambient Blur Desktop -->
+        <div class="absolute top-10 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-red-500/10 blur-[150px] rounded-full pointer-events-none desktop-only"></div>
+
+        <form id="pdf-form" action="{{ tool.action_url }}" method="POST" enctype="multipart/form-data" class="w-full flex-grow flex flex-col font-inter max-w-[1600px] mx-auto p-4 md:p-8">
+            <input type="file" name="pdf_files" id="file-upload" class="hidden" multiple>
+
+            <!-- UPLOAD SCREEN -->
+            <div id="upload-screen" class="flex-grow flex flex-col items-center justify-center w-full max-w-5xl mx-auto relative z-10 transition-all duration-300">
+                <div class="mb-10 text-center" id="header-text">
+                    <h1 class="text-[28px] md:text-[48px] font-extrabold text-white mb-3 tracking-tight">{{ tool.title }}</h1>
+                    <p class="text-[15px] md:text-[18px] text-slate-400 max-w-2xl mx-auto px-4">{{ tool.desc }}</p>
+                </div>
+                <!-- Universal Dropzone -->
+                <div id="drop-area" class="dropzone w-full p-10 md:p-20 rounded-[32px] flex flex-col items-center justify-center cursor-pointer shadow-2xl">
+                    <div class="w-20 h-20 md:w-24 md:h-24 bg-[#e5322d]/10 text-[#e5322d] rounded-3xl flex items-center justify-center mb-6 shadow-[inset_0_0_20px_rgba(229,50,45,0.1)]">
+                        <i class="fa-solid fa-file-arrow-up text-4xl md:text-5xl"></i>
+                    </div>
+                    <button type="button" onclick="document.getElementById('file-upload').click(); event.stopPropagation();" class="bg-[#e5322d] hover:bg-[#cc2b26] text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-[0_0_20px_rgba(229,50,45,0.3)] transition-all transform hover:scale-105 mb-3">
+                        Choose files
+                    </button>
+                    <p class="text-slate-500 font-medium text-sm desktop-only">or drop files here</p>
+                </div>
+            </div>
+
+            <!-- PREVIEW SCREEN -->
+            <div id="preview-screen" class="hidden w-full h-full flex-col md:flex-row gap-6 max-w-7xl mx-auto relative z-10 animate-[fadeIn_0.3s_ease]">
+                
+                <!-- Center Work Area -->
+                <div class="flex-grow bg-[#0f172a] border border-slate-800 rounded-3xl p-4 md:p-6 shadow-xl relative flex flex-col min-h-[500px]">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-copy text-slate-400"></i> Selected Files <span id="file-count-badge" class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded-full ml-2">0</span></h2>
+                    </div>
+                    
+                    <div id="file-list" class="flex flex-wrap gap-4 content-start overflow-y-auto no-scrollbar flex-grow pb-16">
+                        <!-- File Cards Will Be Generated Here -->
+                    </div>
+                    
+                    <button type="button" onclick="document.getElementById('file-upload').click(); event.stopPropagation();" class="absolute bottom-6 right-6 bg-[#1e293b] border border-slate-600 hover:bg-slate-700 text-white rounded-2xl w-14 h-14 flex items-center justify-center shadow-lg hover:scale-105 transition-transform z-20 tooltip">
+                        <i class="fa-solid fa-plus text-xl"></i>
+                    </button>
+                    <div class="absolute bottom-8 left-0 w-full h-10 bg-gradient-to-t from-[#0f172a] to-transparent pointer-events-none"></div>
+                </div>
+
+                <!-- Right Sidebar Settings UI -->
+                <div class="w-full md:w-[350px] lg:w-[400px] shrink-0 bg-[#0f172a] border border-slate-800 rounded-3xl shadow-xl flex flex-col overflow-hidden h-fit sticky top-32">
+                    {% block sidebar %}
+                        <!-- Sidebar injected per tool -->
+                    {% endblock %}
+                </div>
+            </div>
+
+            <!-- PROGRESS SCREEN -->
+            <div id="progress-screen" class="hidden w-full max-w-2xl mx-auto relative z-10 flex-col items-center justify-center h-[60vh] animate-[fadeIn_0.3s_ease]">
+                <div class="bg-[#0f172a] border border-slate-800 w-full p-10 md:p-16 rounded-[32px] shadow-2xl text-center">
+                    <div class="w-20 h-20 bg-slate-900 border border-slate-800 text-[#e5322d] rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                         <i class="fa-solid fa-circle-notch fa-spin text-4xl"></i>
+                    </div>
+                    <h2 class="text-[26px] font-bold text-white mb-6 tracking-tight" id="progress-text">Processing your files...</h2>
+                    
+                    <div class="w-full bg-[#1e293b] h-2.5 mb-4 rounded-full overflow-hidden border border-slate-800">
+                        <div id="progress-bar" class="bg-[#e5322d] h-full w-0 transition-all duration-[400ms] relative shadow-[0_0_10px_rgba(229,50,45,0.8)]"></div>
+                    </div>
+                    
+                    <h1 id="progress-percent" class="text-[42px] font-black text-white mt-2 tracking-tighter">0%</h1>
+                    <p class="text-slate-500 text-[12px] uppercase font-bold tracking-widest mt-1">Uploaded</p>
+                </div>
+            </div>
+
+            <!-- DOWNLOAD SCREEN -->
+            <div id="download-screen" class="hidden w-full max-w-3xl mx-auto relative z-10 animate-[fadeIn_0.5s_ease] mt-10 md:mt-20">
+                <div class="text-center p-8 md:p-16 w-full bg-[#0f172a] border border-emerald-900/30 rounded-[32px] shadow-2xl relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none"></div>
+                    
+                    <div class="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 relative z-10 border border-emerald-500/20">
+                        <i class="fa-solid fa-check text-5xl"></i>
+                    </div>
+                    
+                    <h1 class="text-[32px] md:text-[44px] font-extrabold text-white mb-4 tracking-tight relative z-10" id="download-title">Task Completed!</h1>
+                    <p class="text-slate-400 mb-10 max-w-sm mx-auto text-[15px] relative z-10">Your files have been successfully processed completely and are ready to download safely.</p>
+                    
+                    <!-- Compression UI stats can be injected here safely via JS -->
+                    
+                    <a id="download-btn" href="#" download class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xl px-10 py-5 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all transform hover:scale-[1.02] inline-flex items-center gap-4 w-full sm:w-auto justify-center mb-8 relative z-10">
+                        <span id="download-btn-text">Download File</span> <i class="fa-solid fa-download"></i>
+                    </a>
+                    
+                    <button type="button" onclick="location.reload()" class="block mx-auto text-slate-500 hover:text-white font-semibold transition cursor-pointer relative z-10"><i class="fa-solid fa-rotate-left mr-2"></i> Start new task</button>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- MOBILE PWA NAV -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-[#18181b]/95 backdrop-blur-lg border-t border-[#27272a] flex justify-around items-center h-[85px] z-[100] pb-5 pt-2">
+        <a href="/" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4">
+            <i class="fa-solid fa-house text-[22px] mb-1.5"></i><span class="text-[11px] font-semibold">Home</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-[#e5322d] w-1/4">
+            <i class="fa-solid fa-layer-group text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">Tools</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4">
+            <i class="fa-solid fa-star text-[22px] mb-1.5"></i><span class="text-[11px] font-semibold">Pro</span>
+        </a>
+        <a href="{% url 'dashboard' %}" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4">
+            <i class="fa-solid fa-user text-[22px] mb-1.5"></i><span class="text-[11px] font-semibold">Profile</span>
+        </a>
+    </nav>
+
+    <script>
+        const dropArea = document.getElementById('drop-area');
+        const fileUpload = document.getElementById('file-upload');
+        const dt = new DataTransfer();
+        const scrUpload = document.getElementById('upload-screen');
+        const scrPreview = document.getElementById('preview-screen');
+        const scrProgress = document.getElementById('progress-screen');
+        const scrDownload = document.getElementById('download-screen');
+        const fileList = document.getElementById('file-list');
+        const form = document.getElementById('pdf-form');
+
+        // Defaults config
+        window.toolConfig = { minFiles: 1, maxFiles: 0, progressText: 'Processing...', successTitle: 'Task completed!', btnText: 'Download File' };
+
+        {% block extra_js %}{% endblock %}
+
+        // Drag & Drop Handling
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+        dropArea.addEventListener('dragover', () => dropArea.classList.add('dragover'));
+        dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+        dropArea.addEventListener('drop', (e) => {
+            dropArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileUpload.addEventListener('change', function(e) { handleFiles(this.files); });
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            for (let i = 0; i < files.length; i++) dt.items.add(files[i]);
+            if (dt.files.length > 0) {
+                scrUpload.classList.add('hidden'); 
+                scrPreview.classList.remove('hidden');
+                scrPreview.classList.add('flex');
+                
+                const badge = document.getElementById('file-count-badge');
+                if(badge) badge.innerText = dt.files.length;
+
+                renderFiles();
+            }
+        }
+
+        function removeFile(index) {
+            const newDt = new DataTransfer();
+            for(let i=0; i < dt.files.length; i++) {
+                if(i !== index) newDt.items.add(dt.files[i]);
+            }
+            dt.items.clear();
+            for(let i=0; i < newDt.files.length; i++) dt.items.add(newDt.files[i]);
+            
+            const badge = document.getElementById('file-count-badge');
+            if(badge) badge.innerText = dt.files.length;
+            
+            if(dt.files.length === 0) {
+                scrPreview.classList.add('hidden');
+                scrPreview.classList.remove('flex');
+                scrUpload.classList.remove('hidden');
+            } else {
+                renderFiles();
+            }
+        }
+
+        function renderFiles() {
+            if (typeof window.customRenderFiles === 'function') {
+                window.customRenderFiles();
+                return;
+            }
+            
+            fileList.innerHTML = '';
+            for (let i = 0; i < dt.files.length; i++) {
+                const f = dt.files[i];
+                let ext = f.name.split('.').pop().toLowerCase();
+                let iconClass = "fa-file-pdf text-[#e5322d]";
+                if(ext === 'jpg' || ext === 'png' || ext === 'jpeg') iconClass = "fa-image text-blue-500";
+                if(ext === 'docx' || ext === 'doc') iconClass = "fa-file-word text-blue-600";
+                if(ext === 'pptx' || ext === 'ppt') iconClass = "fa-file-powerpoint text-orange-500";
+                if(ext === 'xlsx' || ext === 'xls') iconClass = "fa-file-excel text-emerald-500";
+                
+                const thumb = document.createElement('div');
+                thumb.className = 'w-[140px] md:w-[150px] h-[190px] md:h-[200px] bg-[#1e293b] border border-slate-700 hover:border-slate-500 flex flex-col items-center justify-between p-3 relative rounded-2xl shadow-md group transition-all shrink-0';
+                
+                let shortName = f.name.length > 15 ? f.name.substring(0, 12) + "..." : f.name;
+
+                thumb.innerHTML = `
+                    <button type="button" onclick="removeFile(${i}); event.stopPropagation();" class="absolute top-2 right-2 w-7 h-7 bg-black/70 hover:bg-[#e5322d] text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-200 z-10 shadow border border-transparent group-hover:border-white/20">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                    <div class="absolute top-2 left-2 bg-slate-800 text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded shadow border border-slate-700">${i+1}</div>
+                    
+                    <div class="flex-grow w-full flex items-center justify-center mb-2 mt-4 bg-[#0f172a] rounded-xl border border-slate-800">
+                        <i class="fa-solid ${iconClass} text-[50px] shadow-sm"></i>
+                    </div>
+                    <div class="w-full text-center px-1">
+                        <span class="text-[12px] font-semibold text-slate-300 truncate block w-full" title="${f.name}">${shortName}</span>
+                        <span class="text-[10px] text-slate-500">${(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                    </div>
+                `;
+                fileList.appendChild(thumb);
+            }
+        }
+
+        window.activeForm = form;
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            if (dt.files.length < window.toolConfig.minFiles) {
+                alert(`Please select at least ${window.toolConfig.minFiles} file(s).`);
+                return;
+            }
+
+            scrPreview.classList.add('hidden'); 
+            scrPreview.classList.remove('flex');
+            scrProgress.classList.remove('hidden');
+            scrProgress.classList.add('flex');
+            
+            document.getElementById('progress-text').innerText = window.toolConfig.progressText;
+            document.getElementById('download-title').innerText = window.toolConfig.successTitle;
+            document.getElementById('download-btn-text').innerText = window.toolConfig.btnText;
+
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData(form);
+            formData.delete('pdf_files');
+            for (let i = 0; i < dt.files.length; i++) formData.append('pdf_files', dt.files[i]);
+
+            // Fake smooth progress 
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if(progress > 96) progress = 96;
+                document.getElementById('progress-bar').style.width = Math.round(progress) + '%';
+                document.getElementById('progress-percent').innerText = Math.round(progress) + '%';
+            }, 600);
+
+            xhr.addEventListener("load", () => {
+                
+                if (xhr.status === 200) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if(res.status === 'success' || res.download_url) {
+                            clearInterval(interval);
+                            document.getElementById('progress-bar').style.width = '100%';
+                            document.getElementById('progress-percent').innerText = '100%';
+                            
+                            setTimeout(() => {
+                                scrProgress.classList.add('hidden'); 
+                                scrProgress.classList.remove('flex');
+                                scrDownload.classList.remove('hidden');
+                                document.getElementById('download-btn').href = res.download_url || res.url;
+                            }, 500);
+                        } else {
+                            throw new Error(res.error || res.message || "Failed.");
+                        }
+                    } catch(e) {
+                        clearInterval(interval);
+                        alert("Backend Error: " + e.message); 
+                        window.location.reload();
+                    }
+                } else { 
+                    clearInterval(interval);
+                    let err = "Backend Crash!";
+                    try { err = JSON.parse(xhr.responseText).error || err; } catch(e){}
+                    alert(err); 
+                    window.location.reload(); 
+                }
+            });
+            
+            xhr.addEventListener("error", () => {
+                clearInterval(interval);
+                alert("Network error occurred.");
+                window.location.reload();
+            });
+
+            xhr.open("POST", form.action, true);
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>

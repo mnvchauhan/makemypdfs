@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <title>Sign Up - MakeMyPDFs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        
+        .auth-card { background-color: #0f172a; border: 1px solid #1e293b; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        
+        form p { display: flex; flex-direction: column; margin-bottom: 1.25rem; width: 100%; }
+        form label { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; text-align: left; color: #cbd5e1; }
+        form input { width: 100%; padding: 14px 16px; border-radius: 12px; font-size: 15px; outline: none; transition: all 0.3s ease; background-color: rgba(30, 41, 59, 0.5); border: 1px solid #334155; color: #f8fafc; }
+        form input:focus { border-color: #e5322d; box-shadow: 0 0 0 4px rgba(229, 50, 45, 0.15); }
+        ul.errorlist { color: #ef4444; font-size: 0.85rem; background: rgba(229, 50, 45, 0.1); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; list-style-type: none; border: 1px solid rgba(229,50,45,0.2); }
+        .helptext { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
+
+        @media (max-width: 768px) {
+            body { background-color: #000000; padding-bottom: 85px; }
+            .auth-card { background-color: #000000; border: none; box-shadow: none; padding: 10px !important; }
+            form input { background-color: #18181b; border: 1px solid #27272a; }
+            .desktop-only { display: none !important; }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-[#e5322d] selection:text-white flex flex-col min-h-screen">
+
+    <header class="bg-[#020617]/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-[100] desktop-only">
+        <div class="max-w-[1600px] mx-auto flex items-center justify-between px-4 lg:px-10 h-24">
+            <a href="/" class="flex items-center gap-4 text-[28px] font-black tracking-tighter text-white">
+                <div class="bg-[#e5322d] text-white w-12 h-12 flex items-center justify-center rounded-xl shadow-lg shadow-red-500/20">
+                    <i class="fa-solid fa-file-pdf text-xl"></i>
+                </div>
+                <span>MakeMy<span class="text-[#e5322d]">PDFs</span></span>
+            </a>
+        </div>
+    </header>
+
+    <div class="flex-grow flex items-center justify-center p-4 md:p-8">
+        <div class="auth-card w-full max-w-md p-8 md:p-10 rounded-3xl flex flex-col items-center mt-4 md:mt-0">
+            
+            <a href="/" class="md:hidden flex items-center gap-3 text-[26px] font-black tracking-tighter text-white mb-6 mt-2">
+                <div class="bg-[#e5322d] w-10 h-10 flex items-center justify-center rounded-xl"><i class="fa-solid fa-file-pdf text-lg"></i></div>
+                <span>MakeMy<span class="text-[#e5322d]">PDFs</span></span>
+            </a>
+
+            <h2 class="text-2xl md:text-3xl font-extrabold mb-6 text-center text-white">Create an account</h2>
+
+            <button class="w-full bg-[#18181b] md:bg-[#1e293b] border border-slate-700 hover:bg-slate-800 text-white py-3.5 rounded-xl font-semibold flex justify-center items-center gap-3 transition mb-6">
+                <i class="fab fa-google text-red-500 text-lg"></i> Sign up with Google
+            </button>
+
+            <form method="POST" class="w-full flex flex-col items-center mt-2">
+                {% csrf_token %}
+                <div class="w-full text-left">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" class="w-full bg-[#e5322d] hover:bg-[#cc2b26] text-white font-bold py-4 rounded-xl text-[15px] transition shadow-[0_0_20px_rgba(229,50,45,0.3)] mt-4">
+                    Create Account
+                </button>
+            </form>
+
+            <p class="mt-8 text-sm text-slate-400">
+                Already have an account? <a href="{% url 'login' %}" class="text-[#e5322d] font-bold hover:underline">Log in</a>
+            </p>
+        </div>
+    </div>
+
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-[#18181b]/95 backdrop-blur-lg border-t border-[#27272a] flex justify-around items-center h-[85px] z-[100] pb-5 pt-2">
+        <a href="/" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4 transition-colors">
+            <i class="fa-solid fa-house text-[22px] mb-1.5"></i>
+            <span class="text-[11px] font-semibold">Home</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4 transition-colors">
+            <i class="fa-solid fa-folder text-[22px] mb-1.5"></i>
+            <span class="text-[11px] font-semibold">Files</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4 transition-colors">
+            <i class="fa-solid fa-star text-[22px] mb-1.5"></i>
+            <span class="text-[11px] font-semibold">Pro</span>
+        </a>
+        <a href="{% url 'login' %}" class="flex flex-col items-center justify-center text-[#e5322d] w-1/4 transition-colors">
+            <i class="fa-solid fa-user text-[22px] mb-1.5"></i>
+            <span class="text-[11px] font-bold">Profile</span>
+        </a>
+    </nav>
+
+</body>
+</html>

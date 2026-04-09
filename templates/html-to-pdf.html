@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 bg-slate-800 w-20 h-20 flex items-center justify-center rounded-2xl shadow-sm border border-slate-800">
+            <i class="fa-solid fa-code text-white text-[32px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">HTML to PDF</h2>
+        <p class="text-[14px] text-slate-400 leading-relaxed max-w-[250px]">
+            Convert webpages in HTML to PDF. Copy and paste the URL of the page you want and convert it to PDF with a click.
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="button" id="convert-url-btn" class="w-full bg-[#e5322d] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02] transition hover:scale-[1.02] transition">
+            Convert to PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // Replace default upload UI with a massive, clean URL Input Box
+    try {
+        const workspace = document.getElementById('upload-screen');
+        if (workspace) {
+            workspace.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full w-full max-w-2xl mx-auto px-6">
+                    <h2 class="text-[36px] font-bold text-white mb-4">Add URL</h2>
+                    <p class="text-slate-400 mb-10 text-[18px]">Paste the URL of the webpage you want to convert to PDF</p>
+                    
+                    <div class="w-full flex shadow-sm rounded-lg overflow-hidden border border-slate-700 focus-within:border-[#e5322d] focus-within:ring-1 focus-within:ring-[#e5322d] transition-all bg-[#1e293b]">
+                        <div class="bg-slate-800 px-5 flex items-center justify-center border-r border-slate-800">
+                            <i class="fa-solid fa-link text-gray-400"></i>
+                        </div>
+                        <input type="url" id="website-url-input" placeholder="https://example.com" class="w-full px-5 py-4 text-[16px] outline-none text-white">
+                    </div>
+                </div>
+            `;
+        }
+    } catch(e) {
+        console.error("UI Update Error:", e);
+    }
+
+    // Custom Submit Logic for URL
+    document.getElementById('convert-url-btn').addEventListener('click', function() {
+        const urlInput = document.getElementById('website-url-input').value;
+        
+        if (!urlInput) {
+            alert("Please enter a valid URL first.");
+            return;
+        }
+
+        const workspace = document.getElementById('workspace');
+        if (workspace) {
+            workspace.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full w-full">
+                    <i class="fa-solid fa-circle-notch fa-spin text-[60px] text-[#e5322d] mb-6"></i>
+                    <h2 class="text-[24px] font-bold text-white">Converting Webpage...</h2>
+                    <p class="text-slate-400 mt-2">Please wait while we capture the layout.</p>
+                </div>
+            `;
+        }
+
+        const formData = new FormData();
+        formData.append('website_url', urlInput);
+
+        fetch('/api/html-to-pdf', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                workspace.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full w-full">
+                        <i class="fa-solid fa-circle-check text-[70px] text-green-500 mb-6"></i>
+                        <h2 class="text-[28px] font-black text-white mb-8">Webpage Converted!</h2>
+                        <a href="${data.download_url}" class="bg-[#e5322d] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02] transition hover:scale-[1.02] transition flex items-center gap-4">
+                            <i class="fa-solid fa-file-pdf text-3xl"></i> Download PDF
+                        </a>
+                    </div>
+                `;
+            } else {
+                alert("Error: " + data.error);
+                location.reload(); 
+            }
+        })
+        .catch(error => {
+            alert("Server connection failed.");
+            location.reload();
+        });
+    });
+{% endblock %}

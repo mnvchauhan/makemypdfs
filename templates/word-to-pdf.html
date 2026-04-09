@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#0f172a]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#2A5699] bg-blue-100 w-fit rounded-xl p-6 shadow-sm border border-blue-200">
+            <i class="fa-solid fa-file-export text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Convert your DOC and DOCX files to PDF with high accuracy. 
+            The layout and formatting will be preserved!
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b] ">
+        <button type="submit" class="w-full bg-[#2A5699] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-[0_4px_10px_rgba(42,86,153,0.3)] hover:bg-[#1e3f75] transition">
+            Convert to PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // Config for Word to PDF Tool
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Converting Word to PDF...', 
+        successTitle: 'Conversion Successful!', 
+        btnText: 'Download PDF' 
+    };
+
+    // UI Improvement: Set file upload to only accept Word documents
+    const fileInput = document.getElementById('file-upload');
+    if (fileInput) {
+        fileInput.accept = ".doc,.docx";
+    }
+
+    // Update Download Button Icon for Word-to-PDF
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        // Keeping it consistent but you can change icons here if needed
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-pdf text-3xl"></i> <span id="download-btn-text">Download PDF</span>';
+    }
+{% endblock %}

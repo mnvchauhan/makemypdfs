@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#0f172a]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#FDBA12] bg-yellow-100 w-fit rounded-xl p-6 shadow-sm border border-yellow-200">
+            <i class="fa-solid fa-rotate-right text-[60px]"></i>
+        </div>
+        <h2 class="text-[22px] font-bold text-white mb-2">{{ tool.title }}</h2>
+        <p class="text-[13px] text-slate-400 mb-8">Mouse over PDF below and click the arrows to rotate, or use the buttons below.</p>
+        
+        <input type="hidden" name="rotation_angle" id="rotation_angle" value="0">
+        
+        <div class="flex flex-col gap-4 w-full">
+            <button type="button" onclick="rotateAll(90)" class="w-full bg-[#1e293b] border border-slate-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-800 p-2 rounded-lg group-hover:bg-red-50 transition-colors">
+                        <i class="fa-solid fa-rotate-right text-[#e5322d]"></i>
+                    </div>
+                    <span class="font-bold text-slate-700">RIGHT</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </button>
+
+            <button type="button" onclick="rotateAll(-90)" class="w-full bg-[#1e293b] border border-slate-800 p-4 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
+                <div class="flex items-center gap-4">
+                    <div class="bg-slate-800 p-2 rounded-lg group-hover:bg-red-50 transition-colors">
+                        <i class="fa-solid fa-rotate-left text-[#e5322d]"></i>
+                    </div>
+                    <span class="font-bold text-slate-700">LEFT</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </button>
+            
+            <button type="button" onclick="resetRotation()" class="text-[13px] font-bold text-blue-500 hover:underline mt-2">Reset all</button>
+        </div>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#e5322d] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02] transition hover:scale-[1.02] transition">
+            Rotate PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Rotating your pages...', 
+        successTitle: 'Rotation Complete!', 
+        btnText: 'Download Rotated PDF' 
+    };
+
+    let globalRotation = 0;
+
+    // --- ASLI PDF RENDERER (Ab preview dikhega!) ---
+    window.customRenderFiles = function() {
+        const file = dt.files[0];
+        if (!file) return;
+
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '<div class="text-[18px] font-bold mt-20 text-slate-500 w-full text-center flex flex-col items-center"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-[#e5322d] mb-4"></i> Loading Preview...</div>';
+
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+            const typedarray = new Uint8Array(this.result);
+            pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+                fileList.innerHTML = ''; 
+                
+                // Hum pehle page ka preview dikhayenge rotate tool mein
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const thumb = document.createElement('div');
+                    thumb.className = 'w-[180px] h-[250px] bg-[#1e293b] border border-slate-800 flex flex-col items-center justify-center p-3 relative shadow-sm rounded-lg m-2 overflow-hidden';
+                    
+                    thumb.innerHTML = `
+                        <div class="absolute top-2 left-2 bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded z-20">Page ${i}</div>
+                        <canvas id="canvas-${i}" class="max-w-full max-h-[190px] shadow-sm transition-transform duration-300" style="transform: rotate(${globalRotation}deg)"></canvas>
+                        <span class="text-[11px] font-semibold text-center w-full truncate text-slate-500 mt-3 italic">${file.name}</span>
+                    `;
+                    fileList.appendChild(thumb);
+
+                    pdf.getPage(i).then(page => {
+                        const canvas = document.getElementById(`canvas-${i}`);
+                        const context = canvas.getContext('2d');
+                        const viewport = page.getViewport({scale: 0.5}); 
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        page.render({canvasContext: context, viewport: viewport});
+                    });
+                }
+            });
+        };
+        fileReader.readAsArrayBuffer(file);
+    };
+
+    // --- ROTATION LOGIC ---
+    function rotateAll(degree) {
+        globalRotation = (globalRotation + degree) % 360;
+        if (globalRotation < 0) globalRotation += 360;
+
+        document.getElementById('rotation_angle').value = globalRotation;
+
+        const previews = document.querySelectorAll('#file-list canvas');
+        previews.forEach(canvas => {
+            canvas.style.transition = "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+            canvas.style.transform = `rotate(${globalRotation}deg)`;
+        });
+    }
+
+    function resetRotation() {
+        globalRotation = 0;
+        document.getElementById('rotation_angle').value = 0;
+        document.querySelectorAll('#file-list canvas').forEach(c => c.style.transform = `rotate(0deg)`);
+    }
+{% endblock %}

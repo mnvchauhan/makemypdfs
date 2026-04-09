@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#0f172a]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-slate-700 bg-slate-200 w-fit rounded-xl p-6 shadow-sm border border-slate-300">
+            <i class="fa-solid fa-shield-halved text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed mb-8">Choose a strong password to encrypt and protect your PDF file.</p>
+        
+        <div class="w-full bg-[#1e293b] rounded-xl p-5 border-2 border-transparent focus-within:border-[#e5322d] shadow-sm transition-all text-left">
+            <label class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 block">Set PDF Password</label>
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-lock text-gray-300"></i>
+                <input type="password" name="pdf_password" id="pw-input" placeholder="Type password here..." class="w-full bg-transparent outline-none text-[16px] font-bold text-white">
+                <button type="button" onclick="togglePW()" class="text-gray-400 hover:text-[#e5322d]"><i id="pw-icon" class="fa-solid fa-eye"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b] ">
+        <button type="submit" class="w-full bg-slate-900 text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-black transition">
+            Protect PDF <i class="fa-solid fa-shield-lock ml-1"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 1, 
+        progressText: 'Encrypting your PDF...', 
+        successTitle: 'PDF is now Protected!', 
+        btnText: 'Download Protected PDF' 
+    };
+
+    function togglePW() {
+        const input = document.getElementById('pw-input');
+        const icon = document.getElementById('pw-icon');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#d24726] bg-red-50 w-fit rounded-xl p-6 shadow-sm border border-red-100">
+            <i class="fa-solid fa-file-powerpoint text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Convert your PDF pages into high-quality PowerPoint slides. Perfectly sized for your next presentation!
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#d24726] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#b03a1f] transition">
+            Convert to PPTX <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // Config for PDF to PowerPoint Tool
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Creating presentation slides...', 
+        successTitle: 'Conversion Successful!', 
+        btnText: 'Download POWERPOINT' 
+    };
+
+    // Update Download Button UI
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-powerpoint text-3xl"></i> <span id="download-btn-text">Download POWERPOINT</span>';
+        downloadBtn.className = "bg-[#d24726] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#b03a1f] transition flex items-center gap-4 mb-12";
+    }
+{% endblock %}

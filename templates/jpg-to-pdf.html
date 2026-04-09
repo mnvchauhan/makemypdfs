@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-6 flex-grow overflow-y-auto">
+        
+        <h3 class="text-[13px] font-extrabold text-gray-400 uppercase tracking-widest mb-4">Page Orientation</h3>
+        <div class="flex gap-2 mb-8">
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="ui_orientation" value="portrait" class="peer hidden" checked>
+                <div class="border-2 border-slate-800 rounded-xl p-3 text-center peer-checked:border-[#fdba12] peer-checked:bg-yellow-50 transition-all">
+                    <i class="fa-solid fa-file text-2xl text-gray-400 peer-checked:text-[#fdba12] mb-1 block"></i>
+                    <span class="text-[12px] font-bold text-white">Portrait</span>
+                </div>
+            </label>
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="ui_orientation" value="landscape" class="peer hidden">
+                <div class="border-2 border-slate-800 rounded-xl p-3 text-center peer-checked:border-[#fdba12] peer-checked:bg-yellow-50 transition-all">
+                    <i class="fa-solid fa-file items-center rotate-90 text-2xl text-gray-400 peer-checked:text-[#fdba12] mb-1 block"></i>
+                    <span class="text-[12px] font-bold text-white">Landscape</span>
+                </div>
+            </label>
+        </div>
+
+        <h3 class="text-[13px] font-extrabold text-gray-400 uppercase tracking-widest mb-4">Margin</h3>
+        <div class="flex gap-2">
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="ui_margin" value="no_margin" class="peer hidden" checked>
+                <div class="border-2 border-slate-800 rounded-xl p-2 text-center peer-checked:border-[#fdba12] peer-checked:bg-yellow-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">No margin</span>
+                </div>
+            </label>
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="ui_margin" value="small" class="peer hidden">
+                <div class="border-2 border-slate-800 rounded-xl p-2 text-center peer-checked:border-[#fdba12] peer-checked:bg-yellow-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Small</span>
+                </div>
+            </label>
+            <label class="cursor-pointer flex-1">
+                <input type="radio" name="ui_margin" value="big" class="peer hidden">
+                <div class="border-2 border-slate-800 rounded-xl p-2 text-center peer-checked:border-[#fdba12] peer-checked:bg-yellow-50 transition-all">
+                    <span class="text-[12px] font-bold text-white">Big</span>
+                </div>
+            </label>
+        </div>
+
+        <input type="hidden" name="sorted_names" id="sorted_names" value="">
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#fdba12] text-white font-black py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#eab308] transition">
+            Convert to PDF <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // 1. Tool Configuration
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Converting Images to PDF...', 
+        successTitle: 'Images Converted!', 
+        btnText: 'Download PDF' 
+    };
+
+    // 2. Safe UI Updates (Crash-Proof)
+    try {
+        const fileInput = document.getElementById('file-upload');
+        if (fileInput) fileInput.accept = "image/jpeg, image/png, image/jpg";
+
+        // "Select PDF files" ko "Select JPG images" banayenge
+        const uploadLabel = document.querySelector('label[for="file-upload"]');
+        if (uploadLabel) {
+            uploadLabel.innerHTML = '<i class="fa-solid fa-image"></i> Select JPG images';
+            uploadLabel.className = "bg-[#fdba12] text-white cursor-pointer text-[24px] font-bold py-5 px-10 rounded-lg shadow-lg hover:bg-[#eab308] transition flex items-center gap-3 w-fit mx-auto";
+        }
+    } catch(e) {
+        console.error("UI Update Error:", e);
+    }
+
+    // 3. SortableJS Drag & Drop
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js';
+    script.onload = () => {
+        const fileListEl = document.getElementById('file-list');
+        if(fileListEl) {
+            new Sortable(fileListEl, {
+                animation: 150,
+                ghostClass: 'opacity-50',
+                cursor: 'move'
+            });
+        }
+    };
+    document.head.appendChild(script);
+
+    // 4. Custom UI Renderer (For Images)
+    window.customRenderFiles = function() {
+        const fileList = document.getElementById('file-list');
+        if (!fileList || typeof dt === 'undefined') return;
+        
+        fileList.innerHTML = '';
+        
+        for (let i = 0; i < dt.files.length; i++) {
+            const file = dt.files[i];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const thumb = document.createElement('div');
+                thumb.className = 'w-[160px] h-[200px] bg-[#1e293b] border border-slate-800 flex flex-col items-center justify-center p-3 relative shadow-sm rounded-lg m-2 cursor-move hover:border-[#fdba12] transition-colors';
+                thumb.setAttribute('data-name', file.name); 
+                
+                thumb.innerHTML = `
+                    <div class="absolute top-2 left-2 bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-20"><i class="fa-solid fa-arrows-up-down-left-right"></i></div>
+                    <div class="h-[140px] w-full flex items-center justify-center mb-2">
+                        <img src="${e.target.result}" class="max-w-full max-h-full object-contain pointer-events-none rounded">
+                    </div>
+                    <span class="text-[11px] font-semibold text-center w-full truncate text-slate-500">${file.name}</span>
+                `;
+                fileList.appendChild(thumb);
+            }
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // 5. Submit Event Handler (Properly attached)
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('tool-form');
+        if(form) {
+            form.addEventListener('submit', function() {
+                const domItems = document.querySelectorAll('#file-list > div');
+                let sortedNames = [];
+                domItems.forEach(item => {
+                    sortedNames.push(item.getAttribute('data-name'));
+                });
+                const sortedInput = document.getElementById('sorted_names');
+                if(sortedInput) {
+                    sortedInput.value = sortedNames.join(',');
+                }
+            }, true);
+        }
+    });
+{% endblock %}

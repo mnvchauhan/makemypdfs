@@ -1,0 +1,22 @@
+# Web Framework & Production Server
+Django>=4.2.0
+gunicorn>=21.2.0
+
+# Core PDF Engine (Merge, Split, Watermark, Sign, JPG to PDF)
+PyMuPDF>=1.23.8
+
+# PDF to PowerPoint
+python-pptx>=0.6.23
+
+# PDF to Excel & Excel to PDF
+pdfplumber>=0.10.3
+pandas>=2.1.4
+openpyxl>=3.1.2
+
+# HTML to PDF
+pdfkit>=1.0.0
+
+# Formatting and Conversions
+pdf2docx>=0.5.8
+pdf2image>=1.16.3
+mammoth>=1.6.0

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#f8fafc]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#3b82f6] bg-blue-50 w-fit rounded-xl p-6 shadow-sm border border-blue-100 flex items-center gap-2">
+            <i class="fa-solid fa-file-pdf text-[50px]"></i>
+            <i class="fa-solid fa-arrow-right text-gray-300 text-[20px] mx-2"></i>
+            <i class="fa-solid fa-box-archive text-[#1e40af] text-[50px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">
+            Transform your PDF to PDF/A, the ISO-standardized version of PDF for long-term archiving. Your formatting will be preserved forever.
+        </p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b]">
+        <button type="submit" class="w-full bg-[#3b82f6] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#2563eb] transition">
+            Convert to PDF/A <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Converting to ISO PDF/A Format...', 
+        successTitle: 'Archive Ready!', 
+        btnText: 'Download PDF/A' 
+    };
+
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-box-archive text-3xl"></i> <span id="download-btn-text">Download PDF/A</span>';
+        downloadBtn.className = "bg-[#3b82f6] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#2563eb] transition flex items-center gap-4 mb-12";
+    }
+{% endblock %}

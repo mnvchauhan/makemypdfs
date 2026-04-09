@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<div class="flex flex-col h-full w-full bg-[#0f172a]">
+    <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+        <div class="mb-6 text-[#2A5699] bg-blue-100 w-fit rounded-xl p-6 shadow-sm border border-blue-200">
+            <i class="fa-solid fa-file-word text-[60px]"></i>
+        </div>
+        <h2 class="text-[26px] font-bold text-white mb-4">{{ tool.title }}</h2>
+        <p class="text-[15px] text-slate-400 leading-relaxed">Convert your PDF to a fully editable Word document. We preserve the exact formatting!</p>
+    </div>
+
+    <div class="p-6 mt-auto border-t border-slate-800 bg-[#1e293b] ">
+        <button type="submit" class="w-full bg-[#e5322d] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-[0_5px_15px_rgba(229,50,45,0.4)] hover:bg-[#cc2b26] transition hover:scale-[1.02] transition hover:scale-[1.02] transition">
+            Convert to WORD <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    // Config for PDF to Word
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 0, 
+        progressText: 'Converting PDF to Word...', 
+        successTitle: 'PDF has been converted!', 
+        btnText: 'Download WORD' 
+    };
+    
+    // UI mein Download button ka icon update karne ke liye
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-word text-3xl"></i> <span id="download-btn-text">Download WORD</span>';
+    }
+{% endblock %}
