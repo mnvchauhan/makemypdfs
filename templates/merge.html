@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#000000">
-    <title>Organize PDF - MakeMyPDFs</title>
+    <title>Merge PDF - MakeMyPDFs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -48,7 +48,7 @@
         <a href="/" class="text-slate-400 hover:text-white transition w-10 h-10 flex items-center justify-center bg-[#18181b] rounded-full border border-[#27272a]">
             <i class="fa-solid fa-arrow-left text-lg"></i>
         </a>
-        <div class="text-[18px] font-bold text-white tracking-tight">Organize PDF</div>
+        <div class="text-[18px] font-bold text-white tracking-tight">Merge PDF</div>
         <div class="w-10"></div>
     </div>
 
@@ -56,11 +56,11 @@
         <div class="absolute top-10 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-red-500/10 blur-[150px] rounded-full pointer-events-none desktop-only"></div>
 
         <div class="w-full max-w-5xl text-center relative z-10 mb-6 md:mb-10" id="header-text">
-            <h1 class="text-[28px] md:text-[48px] font-extrabold text-white mb-3 tracking-tight">Organize PDF pages</h1>
-            <p class="text-[15px] md:text-[18px] text-slate-400 max-w-2xl mx-auto">Sort, add and delete PDF pages. Drag and drop the actual page thumbnails to reorder them.</p>
+            <h1 class="text-[28px] md:text-[48px] font-extrabold text-white mb-3 tracking-tight">Merge PDF files</h1>
+            <p class="text-[15px] md:text-[18px] text-slate-400 max-w-2xl mx-auto">Combine PDFs in the order you want with the easiest PDF merger available. Drag and drop to reorder.</p>
         </div>
 
-        <form method="POST" enctype="multipart/form-data" action="{% url 'process_organize_pdf' %}" class="w-full max-w-5xl relative z-10" id="upload-form">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'process_merge' %}" class="w-full max-w-5xl relative z-10" id="upload-form">
             {% csrf_token %}
             <input type="file" id="file-input" name="pdf_files" multiple accept="application/pdf" class="hidden">
 
@@ -109,7 +109,7 @@
             <i class="fa-solid fa-house text-[22px] mb-1.5"></i><span class="text-[11px] font-semibold">Home</span>
         </a>
         <a href="#" class="flex flex-col items-center justify-center text-[#e5322d] w-1/4">
-            <i class="fa-solid fa-arrow-down-a-z text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">Organize</span>
+            <i class="fa-solid fa-layer-group text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">Merge</span>
         </a>
         <a href="#" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/4">
             <i class="fa-solid fa-star text-[22px] mb-1.5"></i><span class="text-[11px] font-semibold">Pro</span>
@@ -269,12 +269,12 @@
                         successArea.innerHTML = `
                             <div class="text-center p-8 md:p-12 bg-[#0f172a] border border-slate-800 rounded-[32px] shadow-2xl animate-[fadeIn_0.5s_ease]">
                                 <div class="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"><i class="fa-solid fa-check text-4xl"></i></div>
-                                <h3 class="text-2xl md:text-4xl font-extrabold text-white mb-4">PDF Organized!</h3>
-                                <p class="text-slate-400 mb-8 max-w-md mx-auto">Your pages have been successfully sorted, removed, and combined.</p>
+                                <h3 class="text-2xl md:text-4xl font-extrabold text-white mb-4">PDF Merged!</h3>
+                                <p class="text-slate-400 mb-8 max-w-md mx-auto">Your files have been successfully merged into a single PDF.</p>
                                 <a href="${data.download_url}" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-lg px-8 py-4 rounded-2xl shadow-lg transition-all transform hover:scale-105 inline-flex items-center gap-3" download>
                                     Download PDF <i class="fa-solid fa-download"></i>
                                 </a>
-                                <button type="button" onclick="location.reload()" class="mt-8 text-slate-500 hover:text-white underline block mx-auto transition">Organize another PDF</button>
+                                <button type="button" onclick="location.reload()" class="mt-8 text-slate-500 hover:text-white underline block mx-auto transition">Merge another PDF</button>
                             </div>
                         `;
                     } else {

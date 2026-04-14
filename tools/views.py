@@ -10,7 +10,6 @@ from django.http import JsonResponse, FileResponse, Http404, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
@@ -210,36 +209,50 @@ def process_organize_pdf(request):
     if request.method == 'POST':
         try:
             files = request.FILES.getlist('pdf_files')
-            page_order_json = request.POST.get('page_order')
+            page_data_json = request.POST.get('page_data')
+
+            print("DEBUG: files=", files)
+            print("DEBUG: page_data_json=", page_data_json)
 
             if not files:
                 return JsonResponse({'status': 'error', 'message': 'No files uploaded.'})
 
             new_doc = fitz.open()
 
-            if page_order_json:
-                page_order = json.loads(page_order_json)
-                doc_dict = {}
-                for f in files:
-                    f.seek(0)
-                    doc_dict[f.name] = fitz.open(stream=f.read(), filetype="pdf")
+            if page_data_json:
+                page_data = json.loads(page_data_json)
+                print("DEBUG: page_data parsed=", page_data)
                 
-                for item in page_order:
-                    file_name = item['file']
-                    page_num = int(item['original_page']) - 1 
-                    if file_name in doc_dict:
-                        doc = doc_dict[file_name]
-                        if 0 <= page_num < len(doc):
-                            new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                if not page_data:
+                    return JsonResponse({'status': 'error', 'message': 'No pages selected to save. Please keep at least one page.'})
                 
-                for doc in doc_dict.values():
-                    doc.close()
+                # Single file for Organize PDF
+                f = files[0]
+                f.seek(0)
+                doc = fitz.open(stream=f.read(), filetype="pdf")
+                
+                print("DEBUG: source doc pages=", len(doc))
+                
+                for item in page_data:
+                    page_num = int(item['page']) - 1 
+                    rotation = int(item.get('rotation', 0))
+                    
+                    if 0 <= page_num < len(doc):
+                        new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                        new_page_index = len(new_doc) - 1
+                        new_page = new_doc[new_page_index]
+                        if rotation:
+                            new_page.set_rotation((new_page.rotation + rotation) % 360)
+                
+                doc.close()
             else:
                 for f in files:
                     f.seek(0)
                     doc = fitz.open(stream=f.read(), filetype="pdf")
                     new_doc.insert_pdf(doc)
                     doc.close()
+
+            print("DEBUG: new doc pages=", len(new_doc))
 
             out_name = f"organized_{uuid.uuid4().hex[:8]}.pdf"
             out_path = os.path.join(settings.MEDIA_ROOT, out_name)
@@ -253,6 +266,7 @@ def process_organize_pdf(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
 
 
 # ==========================================
@@ -1136,6 +1150,5 @@ def logout_user(request):
     logout(request)
     return redirect('login')
 
-@login_required
 def dashboard_view(request):
     return render(request, 'dashboard.html')
