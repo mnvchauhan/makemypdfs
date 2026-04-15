@@ -291,27 +291,54 @@ def process_compress(request):
             
             original_size = os.path.getsize(abs_path)
             
-            # Using PyMuPDF (fitz) for SAFE cross-platform compression (No GhostScript required)
-            doc = fitz.open(abs_path)
+            # ==========================================
+            gs_path = r"C:\Program Files\gs\gs10.07.0\bin\gswin64c.exe"
+            # COMPRESSION LOGIC
+            # ==========================================
+            # ==========================================
+            # COMPRESSION LOGIC
+            # ==========================================
             
+            # 1. Map the frontend tier to the Ghostscript preset
             if compression_level == 'extreme':
-                doc.save(out_path, garbage=4, deflate=True, clean=True)
+                gs_setting = "/screen"  
             elif compression_level == 'recommended':
-                doc.save(out_path, garbage=3, deflate=True)
-            else:
-                doc.save(out_path, garbage=1, deflate=False)
-                
-            doc.close()
+                gs_setting = "/ebook"   
+            else: 
+                gs_setting = "/printer" 
+
+            # 2. Run Ghostscript with the selected preset
+            gs_cmd = [
+                gs_path, 
+                "-sDEVICE=pdfwrite", 
+                "-dCompatibilityLevel=1.4",
+                f"-dPDFSETTINGS={gs_setting}",  # Dynamic setting based on tier
+                "-dNOPAUSE", 
+                "-dQUIET", 
+                "-dBATCH",
+                f"-sOutputFile={out_path}", 
+                abs_path
+            ]
             
+            subprocess.run(gs_cmd, check=True)
+            # ==========================================
+            # ==========================================
+            
+            # Get the ACTUAL new file size after compression
             new_size = os.path.getsize(out_path)
             
+            # If the file somehow got bigger (happens rarely with already-compressed PDFs), 
+            # just serve the original file instead of faking the math.
             if new_size >= original_size:
-                if compression_level == 'extreme': new_size = int(original_size * 0.45)
-                elif compression_level == 'recommended': new_size = int(original_size * 0.65)
-                else: new_size = int(original_size * 0.85)
+                # Overwrite the larger output with the smaller original
+                import shutil
+                shutil.copyfile(abs_path, out_path)
+                new_size = original_size
+                savings = 0
+            else:
+                savings = max(0, round(((original_size - new_size) / original_size) * 100))
                 
-            savings = max(0, round(((original_size - new_size) / original_size) * 100))
-                
+            # Clean up the original uploaded file
             os.remove(abs_path)
             
             return JsonResponse({
@@ -321,9 +348,9 @@ def process_compress(request):
                 "original_size": original_size, 
                 "new_size": new_size
             })
+            
         except Exception as e: 
             return JsonResponse({"error": f"Compression Error: {str(e)}"}, status=500)
-
 
 # ==========================================
 # API: PDF TO WORD
