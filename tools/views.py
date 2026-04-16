@@ -291,10 +291,7 @@ def process_compress(request):
             
             original_size = os.path.getsize(abs_path)
             
-            # ==========================================
             gs_path = r"C:\Program Files\gs\gs10.07.0\bin\gswin64c.exe"
-            # COMPRESSION LOGIC
-            # ==========================================
             # ==========================================
             # COMPRESSION LOGIC
             # ==========================================
