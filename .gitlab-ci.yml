@@ -1,0 +1,25 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  only:
+    - main
+
+  before_script:
+    - apt-get update -y
+    - apt-get install -y openssh-client
+    - eval "$(ssh-agent -s)"
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+  script:
+    - ssh -o StrictHostKeyChecking=no $USER@$SERVER_IP "
+        cd ~/makemypdfs &&
+        git fetch origin &&
+        git reset --hard origin/main &&
+        source venv/bin/activate &&
+        pip install -r requirements.txt &&
+        sudo systemctl restart pdfapp
+      "
