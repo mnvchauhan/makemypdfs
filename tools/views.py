@@ -356,21 +356,49 @@ def process_compress(request):
 def process_pdf_to_word(request):
     if request.method == 'POST':
         files = request.FILES.getlist('pdf_files')
+        
+        # 1. Prevent crash if no file is uploaded
+        if not files:
+            return JsonResponse({"error": "No file uploaded. Please select a PDF."}, status=400)
+            
+        # 2. Ensure the upload directory actually exists
+        if not os.path.exists(settings.MEDIA_ROOT):
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+
         from pdf2docx import Converter
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
+        
+        # Initialize abs_path as None so our cleanup block doesn't crash if save fails
+        abs_path = None 
+        
         try:
             f = files[0]
             path = fs.save(f.name, f)
             abs_path = os.path.join(settings.MEDIA_ROOT, path)
-            out = f"word_{uuid.uuid4().hex}.docx"
+            
+            out = f"word_{uuid.uuid4().hex[:8]}.docx"
             out_path = os.path.join(settings.MEDIA_ROOT, out)
+            
+            # Start conversion
             cv = Converter(abs_path)
             cv.convert(out_path)
             cv.close()
-            os.remove(abs_path)
+            
             return JsonResponse({"status": "success", "download_url": f"/download/{out}"})
-        except Exception as e: return JsonResponse({"error": str(e)}, status=500)
-
+            
+        except Exception as e:
+            print(f"PDF TO WORD CRASH: {e}")
+            return JsonResponse({"error": f"Failed to convert PDF: {str(e)}"}, status=500)
+            
+        finally:
+            # 3. GUARANTEED CLEANUP: This runs whether the conversion succeeds or crashes!
+            if abs_path and os.path.exists(abs_path):
+                try:
+                    os.remove(abs_path)
+                except Exception as cleanup_error:
+                    print(f"Could not delete temp file: {cleanup_error}")
+                    
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 # ==========================================
 # API: PDF TO JPG
@@ -588,34 +616,67 @@ def process_rotate_pdf(request):
 # ==========================================
 # API: PDF TO POWERPOINT
 # ==========================================
+# ==========================================
+# API: PDF TO POWERPOINT (FIXED & SAFE)
+# ==========================================
 @csrf_exempt
 def process_pdf_to_powerpoint(request):
     if request.method == 'POST':
         files = request.FILES.getlist('pdf_files')
-        if not files: return JsonResponse({"error": "No file uploaded"}, status=400)
+        
+        if not files: 
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+            
+        if not os.path.exists(settings.MEDIA_ROOT):
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
         
         from pptx import Presentation
+        from pptx.util import Pt  # CRITICAL IMPORT FOR SIZING
+        
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
         unique_id = uuid.uuid4().hex
+        
         processed_paths = []
+        temp_files_to_cleanup = [] 
         
         try:
             for file in files:
                 filename = fs.save(file.name, file)
                 filepath = os.path.join(settings.MEDIA_ROOT, filename)
+                temp_files_to_cleanup.append(filepath)
                 
+                doc = fitz.open(filepath)
                 prs = Presentation()
                 blank_slide_layout = prs.slide_layouts[6] 
                 
-                doc = fitz.open(filepath)
+                # --- NEW SIZING LOGIC ---
+                # Get the dimensions of the first page of the PDF in points
+                if len(doc) > 0:
+                    first_page = doc[0]
+                    pdf_width = first_page.rect.width
+                    pdf_height = first_page.rect.height
+                    
+                    # Force the PowerPoint presentation to be the EXACT same size
+                    prs.slide_width = Pt(pdf_width)
+                    prs.slide_height = Pt(pdf_height)
+                # ------------------------
+                
                 for page in doc:
-                    pix = page.get_pixmap(dpi=150)
+                    # Bumped DPI to 200 for a sharper presentation display
+                    pix = page.get_pixmap(dpi=200) 
                     img_path = os.path.join(settings.MEDIA_ROOT, f"temp_{unique_id}_{page.number}.png")
+                    temp_files_to_cleanup.append(img_path)
+                    
                     pix.save(img_path)
                     
                     slide = prs.slides.add_slide(blank_slide_layout)
+                    
+                    # Because slide size and image aspect ratio now match perfectly, 
+                    # stretching it to prs.slide_width/height causes ZERO distortion.
                     slide.shapes.add_picture(img_path, 0, 0, width=prs.slide_width, height=prs.slide_height)
+                    
                     os.remove(img_path)
+                    temp_files_to_cleanup.remove(img_path)
                 
                 out_name = f"{os.path.splitext(file.name)[0]}_{unique_id[:4]}.pptx"
                 out_path = os.path.join(settings.MEDIA_ROOT, out_name)
@@ -623,79 +684,146 @@ def process_pdf_to_powerpoint(request):
                 doc.close()
                 
                 processed_paths.append((out_path, out_name))
+                temp_files_to_cleanup.append(out_path) 
+                
                 os.remove(filepath)
+                temp_files_to_cleanup.remove(filepath)
 
             if len(processed_paths) == 1:
                 final_name = processed_paths[0][1]
+                temp_files_to_cleanup.remove(processed_paths[0][0])
             else:
                 final_name = f"presentations_{unique_id}.zip"
                 final_path = os.path.join(settings.MEDIA_ROOT, final_name)
+                
                 with zipfile.ZipFile(final_path, 'w') as zipf:
                     for p, fname in processed_paths:
                         zipf.write(p, arcname=fname)
+                        
+                for p, fname in processed_paths:
+                    if os.path.exists(p):
                         os.remove(p)
-                
+                        if p in temp_files_to_cleanup:
+                            temp_files_to_cleanup.remove(p)
+                            
             return JsonResponse({"status": "success", "download_url": f"/download/{final_name}"})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            print(f"PDF TO PPTX CRASH: {e}")
+            return JsonResponse({"error": f"Failed to convert PDF: {str(e)}"}, status=500)
+            
+        finally:
+            for temp_file in temp_files_to_cleanup:
+                if os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                    except Exception as cleanup_error:
+                        print(f"Failed to cleanup orphaned file {temp_file}: {cleanup_error}")
+                        
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 
 # ==========================================
 # API: PDF TO EXCEL
 # ==========================================
+# ==========================================
+# API: PDF TO EXCEL (FIXED & SAFE)
+# ==========================================
 @csrf_exempt
 def process_pdf_to_excel(request):
     if request.method == 'POST':
         files = request.FILES.getlist('pdf_files')
-        if not files: return JsonResponse({"error": "No file uploaded"}, status=400)
         
+        if not files: 
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+            
+        # Ensure the upload directory actually exists
+        if not os.path.exists(settings.MEDIA_ROOT):
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+            
         import pdfplumber
         import pandas as pd
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
         unique_id = uuid.uuid4().hex
+        
         processed_paths = []
+        temp_files_to_cleanup = []  # Tracks EVERYTHING to prevent storage leaks
         
         try:
             for file in files:
+                # 1. Save uploaded PDF
                 filename = fs.save(file.name, file)
                 filepath = os.path.join(settings.MEDIA_ROOT, filename)
+                temp_files_to_cleanup.append(filepath)
                 
                 out_name = f"{os.path.splitext(file.name)[0]}_{unique_id[:4]}.xlsx"
                 out_path = os.path.join(settings.MEDIA_ROOT, out_name)
                 
+                # 2. Extract Data using PDFPlumber
                 with pdfplumber.open(filepath) as pdf:
                     with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
                         table_found = False
+                        
                         for i, page in enumerate(pdf.pages):
                             tables = page.extract_tables()
+                            
                             for j, table in enumerate(tables):
                                 if table:
                                     df = pd.DataFrame(table)
                                     sheet_name = f"Page_{i+1}_Table_{j+1}"
+                                    
+                                    # Save to Excel sheet (limiting name to 31 chars as required by Excel)
                                     df.to_excel(writer, sheet_name=sheet_name[:31], index=False, header=False)
                                     table_found = True
                         
+                        # 3. Fallback if no tables exist
                         if not table_found:
                             df = pd.DataFrame([["No tabular data found in this PDF."]])
                             df.to_excel(writer, sheet_name="Result", index=False, header=False)
                 
+                # Track the generated Excel file
                 processed_paths.append((out_path, out_name))
+                temp_files_to_cleanup.append(out_path)
+                
+                # Clean up original PDF immediately
                 os.remove(filepath)
+                temp_files_to_cleanup.remove(filepath)
 
+            # 4. Handle single vs multiple files
             if len(processed_paths) == 1:
                 final_name = processed_paths[0][1]
+                # Remove the final file from cleanup so the user can actually download it!
+                temp_files_to_cleanup.remove(processed_paths[0][0])
             else:
                 final_name = f"spreadsheets_{unique_id}.zip"
                 final_path = os.path.join(settings.MEDIA_ROOT, final_name)
+                
                 with zipfile.ZipFile(final_path, 'w') as zipf:
                     for p, fname in processed_paths:
                         zipf.write(p, arcname=fname)
+                        
+                # Clean up individual XLSX files now that they are safely zipped
+                for p, fname in processed_paths:
+                    if os.path.exists(p):
                         os.remove(p)
+                        if p in temp_files_to_cleanup:
+                            temp_files_to_cleanup.remove(p)
                 
             return JsonResponse({"status": "success", "download_url": f"/download/{final_name}"})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            print(f"PDF TO EXCEL CRASH: {e}")
+            return JsonResponse({"error": f"Failed to extract data: {str(e)}"}, status=500)
+            
+        finally:
+            # 5. GUARANTEED CLEANUP: Wipes orphaned files if the try block crashed
+            for temp_file in temp_files_to_cleanup:
+                if os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                    except Exception as cleanup_error:
+                        print(f"Failed to cleanup orphaned file {temp_file}: {cleanup_error}")
+                        
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 
