@@ -3,62 +3,100 @@
 {% block sidebar %}
 <div class="flex flex-col h-full w-full bg-[#f8fafc]">
     <div class="p-6 flex-grow overflow-y-auto">
-        <div class="mb-4 text-[#f15642] bg-orange-50 w-fit rounded-xl p-4 shadow-sm border border-orange-100 mx-auto">
-            <i class="fa-solid fa-stamp text-[40px]"></i>
+        
+        <div class="mb-8">
+            <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-3 text-center">Live Document Preview</h3>
+            <div class="bg-gray-200 rounded-xl p-4 flex justify-center shadow-inner">
+                <div class="bg-white max-w-[200px] w-full relative shadow-md">
+                    <canvas id="preview-canvas" width="595" height="842" class="w-full h-auto pointer-events-none"></canvas>
+                </div>
+            </div>
         </div>
-        <h2 class="text-[22px] font-bold text-white mb-6 text-center">{{ tool.title }}</h2>
         
         <div class="w-full text-left mb-6">
             <label class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 block">Text to Stamp</label>
             <div class="bg-[#1e293b] rounded-xl border border-slate-800 p-3 focus-within:border-[#f15642] transition-all shadow-sm">
-                <input type="text" name="watermark_text" id="watermark_text" placeholder="CONFIDENTIAL" value="MakeMyPDFs" class="w-full bg-transparent outline-none text-white font-bold text-[16px]">
+                <input type="text" name="watermark_text" id="watermark_text" placeholder="CONFIDENTIAL" value="MakeMyPDFs" class="w-full bg-transparent outline-none text-white font-bold text-[16px]" oninput="updatePreview()">
             </div>
         </div>
 
-        <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Position</h3>
+        <div class="w-full text-left mb-6">
+            <label class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 block">Font Size</label>
+            <div class="bg-[#1e293b] rounded-xl border border-slate-800 p-3 focus-within:border-[#f15642] transition-all shadow-sm flex items-center">
+                <input type="number" name="font_size" id="font_size" value="90" min="10" max="200" class="w-full bg-transparent outline-none text-white font-bold text-[16px]" oninput="updatePreview()">
+                <span class="text-gray-500 text-sm font-bold">pt</span>
+            </div>
+        </div>
+
+        <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Watermark Style</h3>
         <div class="flex gap-2 mb-6">
             <label class="cursor-pointer flex-1">
-                <input type="radio" name="position" value="top" class="peer hidden" onchange="document.getElementById('backend-position').value='top'">
+                <input type="radio" name="style" value="standard" class="peer hidden" onchange="updateUI('standard')">
                 <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
-                    <span class="text-[12px] font-bold text-white">Top</span>
+                    <span class="text-[12px] font-bold text-white">Standard</span>
                 </div>
             </label>
             <label class="cursor-pointer flex-1">
-                <input type="radio" name="position" value="center" class="peer hidden" checked onchange="document.getElementById('backend-position').value='center'">
+                <input type="radio" name="style" value="diagonal" class="peer hidden" checked onchange="updateUI('diagonal')">
                 <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
-                    <span class="text-[12px] font-bold text-white">Center</span>
+                    <span class="text-[12px] font-bold text-white">Diagonal</span>
                 </div>
             </label>
             <label class="cursor-pointer flex-1">
-                <input type="radio" name="position" value="bottom" class="peer hidden" onchange="document.getElementById('backend-position').value='bottom'">
+                <input type="radio" name="style" value="tiled" class="peer hidden" onchange="updateUI('tiled')">
                 <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
-                    <span class="text-[12px] font-bold text-white">Bottom</span>
+                    <span class="text-[12px] font-bold text-white">Tiled</span>
                 </div>
             </label>
+        </div>
+
+        <div id="position-container" class="transition-opacity duration-300">
+            <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Position</h3>
+            <div class="flex gap-2 mb-6">
+                <label class="cursor-pointer flex-1">
+                    <input type="radio" name="position" value="top" class="peer hidden" onchange="updateProperty('backend-position', 'top')">
+                    <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
+                        <span class="text-[12px] font-bold text-white">Top</span>
+                    </div>
+                </label>
+                <label class="cursor-pointer flex-1">
+                    <input type="radio" name="position" value="center" class="peer hidden" checked onchange="updateProperty('backend-position', 'center')">
+                    <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
+                        <span class="text-[12px] font-bold text-white">Center</span>
+                    </div>
+                </label>
+                <label class="cursor-pointer flex-1">
+                    <input type="radio" name="position" value="bottom" class="peer hidden" onchange="updateProperty('backend-position', 'bottom')">
+                    <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
+                        <span class="text-[12px] font-bold text-white">Bottom</span>
+                    </div>
+                </label>
+            </div>
         </div>
 
         <h3 class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2">Transparency</h3>
         <div class="flex gap-2">
             <label class="cursor-pointer flex-1">
-                <input type="radio" name="intensity" value="light" class="peer hidden" onchange="document.getElementById('backend-intensity').value='light'">
+                <input type="radio" name="intensity" value="light" class="peer hidden" onchange="updateProperty('backend-intensity', 'light')">
                 <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
                     <span class="text-[12px] font-bold text-white text-opacity-30">Light</span>
                 </div>
             </label>
             <label class="cursor-pointer flex-1">
-                <input type="radio" name="intensity" value="medium" class="peer hidden" checked onchange="document.getElementById('backend-intensity').value='medium'">
+                <input type="radio" name="intensity" value="medium" class="peer hidden" checked onchange="updateProperty('backend-intensity', 'medium')">
                 <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
                     <span class="text-[12px] font-bold text-white text-opacity-70">Medium</span>
                 </div>
             </label>
             <label class="cursor-pointer flex-1">
-                <input type="radio" name="intensity" value="dark" class="peer hidden" onchange="document.getElementById('backend-intensity').value='dark'">
+                <input type="radio" name="intensity" value="dark" class="peer hidden" onchange="updateProperty('backend-intensity', 'dark')">
                 <div class="border border-slate-800 rounded-lg py-2 text-center peer-checked:border-[#f15642] peer-checked:bg-orange-50 transition-all">
                     <span class="text-[12px] font-bold text-white">Solid</span>
                 </div>
             </label>
         </div>
 
+        <input type="hidden" name="style" id="backend-style" value="diagonal">
         <input type="hidden" name="position" id="backend-position" value="center">
         <input type="hidden" name="intensity" id="backend-intensity" value="medium">
     </div>
@@ -72,17 +110,108 @@
 {% endblock %}
 
 {% block extra_js %}
+
     window.toolConfig = { 
-        minFiles: 1, 
-        maxFiles: 0, 
+        minFiles: 1, maxFiles: 0, 
         progressText: 'Stamping Watermark...', 
-        successTitle: 'Watermark Added!', 
-        btnText: 'Download PDF' 
+        successTitle: 'Watermark Added!', btnText: 'Download PDF' 
     };
 
-    const downloadBtn = document.getElementById('download-btn');
-    if (downloadBtn) {
-        downloadBtn.innerHTML = '<i class="fa-solid fa-stamp text-3xl"></i> <span id="download-btn-text">Download PDF</span>';
-        downloadBtn.className = "bg-[#f15642] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#d64a38] transition flex items-center gap-4 mb-12";
+    function updateProperty(id, value) {
+        document.getElementById(id).value = value;
+        updatePreview();
     }
+
+    function updateUI(style) {
+        document.getElementById('backend-style').value = style;
+        const posContainer = document.getElementById('position-container');
+        const fontInput = document.getElementById('font_size');
+        
+        if(style === 'diagonal' && fontInput.value == 35) fontInput.value = 90;
+        if(style === 'tiled' && fontInput.value == 90) fontInput.value = 35;
+        
+        if (style === 'tiled' || style === 'diagonal') {
+            posContainer.style.opacity = '0.3';
+            posContainer.style.pointerEvents = 'none';
+        } else {
+            posContainer.style.opacity = '1';
+            posContainer.style.pointerEvents = 'auto';
+        }
+        updatePreview();
+    }
+
+    // 1:1 Canvas Rendering Engine
+    function updatePreview() {
+        const text = document.getElementById('watermark_text').value || 'MakeMyPDFs';
+        const style = document.getElementById('backend-style').value;
+        const position = document.getElementById('backend-position').value;
+        const intensity = document.getElementById('backend-intensity').value;
+        const fontSize = parseInt(document.getElementById('font_size').value) || 90;
+        
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;   // 595 (Matches PDF Points exactly)
+        const height = canvas.height; // 842 (Matches PDF Points exactly)
+
+        // Clear previous render
+        ctx.clearRect(0, 0, width, height);
+
+        // Setup colors matching Python backend exactly
+        if (intensity === 'light') ctx.fillStyle = 'rgba(191, 191, 191, 0.2)';
+        else if (intensity === 'dark') ctx.fillStyle = 'rgba(51, 51, 51, 0.85)';
+        else ctx.fillStyle = 'rgba(128, 128, 128, 0.45)';
+
+        ctx.font = `bold ${fontSize}px Helvetica, Arial, sans-serif`;
+        const textWidth = ctx.measureText(text).width;
+
+        ctx.save();
+
+        if (style === 'tiled') {
+            // Tiled Logic (Math perfectly matched to backend)
+            const stepY = fontSize * 3;
+            const stepX = (textWidth * 1.5 > 150) ? textWidth * 1.5 : 150;
+            
+            ctx.textAlign = "left";
+            for (let y = -height; y < height * 2; y += stepY) {
+                for (let x = -width; x < width * 2; x += stepX) {
+                    ctx.save();
+                    // Move to exact coordinate and rotate (matches PyMuPDF pivot behavior)
+                    ctx.translate(x, y);
+                    ctx.rotate(-45 * Math.PI / 180);
+                    ctx.fillText(text, 0, 0);
+                    ctx.restore();
+                }
+            }
+            
+        } else if (style === 'diagonal') {
+            // Center Diagonal (Math perfectly matched to backend)
+            ctx.translate(width/2, height/2);
+            ctx.rotate(-45 * Math.PI / 180);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, 0, 0);
+            
+        } else {
+            // Standard Horizontal (Math perfectly matched to backend)
+            ctx.textAlign = "center";
+            const x = width / 2;
+            let y;
+            
+            if (position === 'top') y = height * 0.15 + fontSize;
+            else if (position === 'bottom') y = height * 0.85;
+            else {
+                y = height / 2;
+                ctx.textBaseline = "middle";
+            }
+            
+            ctx.fillText(text, x, y);
+        }
+
+        ctx.restore();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        updatePreview();
+    });
+
 {% endblock %}
