@@ -950,18 +950,30 @@ def process_watermark(request):
         wm_text = request.POST.get('watermark_text', 'MakeMyPDFs')
         position = request.POST.get('position', 'center')
         intensity = request.POST.get('intensity', 'medium')
+        style = request.POST.get('style', 'diagonal') 
+        raw_font_size = request.POST.get('font_size', '')
         
         if not files: return JsonResponse({"error": "No file uploaded"}, status=400)
         if not wm_text.strip(): wm_text = "MakeMyPDFs"
+        
+        try: custom_font_size = int(raw_font_size) if raw_font_size else None
+        except ValueError: custom_font_size = None
         
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
         unique_id = uuid.uuid4().hex
         processed_paths = []
         
-        if intensity == 'light': color = (0.85, 0.85, 0.85)
-        elif intensity == 'dark': color = (0.2, 0.2, 0.2)
-        else: color = (0.6, 0.6, 0.6) 
-        
+        # Colors matched EXACTLY to frontend RGBA values
+        if intensity == 'light': 
+            color = (0.75, 0.75, 0.75)
+            opacity = 0.2
+        elif intensity == 'dark': 
+            color = (0.2, 0.2, 0.2)
+            opacity = 0.85
+        else: 
+            color = (0.5, 0.5, 0.5)
+            opacity = 0.45
+            
         try:
             for file in files:
                 filename = fs.save(file.name, file)
@@ -970,17 +982,65 @@ def process_watermark(request):
                 doc = fitz.open(filepath)
                 for page in doc:
                     rect = page.rect
-                    fontsize = 50
-                    text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
                     
-                    x = (rect.width - text_length) / 2
-                    if position == 'top': y = 80 + fontsize 
-                    elif position == 'bottom': y = rect.height - 80 
-                    else: y = rect.height / 2 
-                    
-                    p = fitz.Point(x, y)
-                    page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
-                
+                    if style == 'tiled':
+                        fontsize = custom_font_size if custom_font_size else 35
+                        text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
+                        
+                        # Math matched perfectly to frontend canvas steps
+                        step_y = int(fontsize * 3)
+                        step_x = int(text_length * 1.5) if (text_length * 1.5) > 150 else 150
+                        
+                        for y in range(-int(rect.height), int(rect.height) * 2, step_y):
+                            for x in range(-int(rect.width), int(rect.width) * 2, step_x):
+                                p = fitz.Point(x, y)
+                                try:
+                                    # Pivot around individual start points for grid
+                                    page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, 
+                                                     color=color, fill_opacity=opacity, 
+                                                     morph=(p, fitz.Matrix(-45)))
+                                except TypeError:
+                                    page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
+                                    
+                    elif style == 'diagonal':
+                        fontsize = custom_font_size if custom_font_size else 90
+                        text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
+                        
+                        cx = rect.width / 2
+                        cy = rect.height / 2
+                        
+                        # Unrotated starting point (centered horizontally and vertically)
+                        x = cx - (text_length / 2)
+                        y = cy + (fontsize / 3)
+                        p = fitz.Point(x, y)
+                        
+                        try:
+                            # TRUE FIX: Pivot around the PAGE center (cx, cy), NOT the text start (p)
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, 
+                                             color=color, fill_opacity=opacity, 
+                                             morph=(fitz.Point(cx, cy), fitz.Matrix(-45)))
+                        except TypeError:
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
+                            
+                    else:
+                        # Standard Horizontal
+                        fontsize = custom_font_size if custom_font_size else 90
+                        text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
+                        
+                        cx = rect.width / 2
+                        if position == 'top': y = rect.height * 0.15 + fontsize
+                        elif position == 'bottom': y = rect.height * 0.85
+                        else: y = rect.height / 2 + (fontsize / 3)
+                        
+                        x = cx - (text_length / 2)
+                        p = fitz.Point(x, y)
+                        
+                        try:
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, 
+                                             color=color, fill_opacity=opacity)
+                        except TypeError:
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
+            
                 out_name = f"watermarked_{unique_id[:4]}.pdf"
                 out_path = os.path.join(settings.MEDIA_ROOT, out_name)
                 doc.save(out_path)
@@ -1000,11 +1060,12 @@ def process_watermark(request):
                         os.remove(p)
                 
             return JsonResponse({"status": "success", "download_url": f"/download/{final_name}"})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            print(f"Watermark Crash: {e}")
+            return JsonResponse({"error": f"Failed to apply watermark: {str(e)}"}, status=500)
+            
     return JsonResponse({"error": "Invalid method"}, status=400)
-
-
 # ==========================================
 # API: POWERPOINT TO PDF
 # ==========================================
