@@ -10,7 +10,6 @@ from django.http import JsonResponse, FileResponse, Http404, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
@@ -210,36 +209,50 @@ def process_organize_pdf(request):
     if request.method == 'POST':
         try:
             files = request.FILES.getlist('pdf_files')
-            page_order_json = request.POST.get('page_order')
+            page_data_json = request.POST.get('page_data')
+
+            print("DEBUG: files=", files)
+            print("DEBUG: page_data_json=", page_data_json)
 
             if not files:
                 return JsonResponse({'status': 'error', 'message': 'No files uploaded.'})
 
             new_doc = fitz.open()
 
-            if page_order_json:
-                page_order = json.loads(page_order_json)
-                doc_dict = {}
-                for f in files:
-                    f.seek(0)
-                    doc_dict[f.name] = fitz.open(stream=f.read(), filetype="pdf")
+            if page_data_json:
+                page_data = json.loads(page_data_json)
+                print("DEBUG: page_data parsed=", page_data)
                 
-                for item in page_order:
-                    file_name = item['file']
-                    page_num = int(item['original_page']) - 1 
-                    if file_name in doc_dict:
-                        doc = doc_dict[file_name]
-                        if 0 <= page_num < len(doc):
-                            new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                if not page_data:
+                    return JsonResponse({'status': 'error', 'message': 'No pages selected to save. Please keep at least one page.'})
                 
-                for doc in doc_dict.values():
-                    doc.close()
+                # Single file for Organize PDF
+                f = files[0]
+                f.seek(0)
+                doc = fitz.open(stream=f.read(), filetype="pdf")
+                
+                print("DEBUG: source doc pages=", len(doc))
+                
+                for item in page_data:
+                    page_num = int(item['page']) - 1 
+                    rotation = int(item.get('rotation', 0))
+                    
+                    if 0 <= page_num < len(doc):
+                        new_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+                        new_page_index = len(new_doc) - 1
+                        new_page = new_doc[new_page_index]
+                        if rotation:
+                            new_page.set_rotation((new_page.rotation + rotation) % 360)
+                
+                doc.close()
             else:
                 for f in files:
                     f.seek(0)
                     doc = fitz.open(stream=f.read(), filetype="pdf")
                     new_doc.insert_pdf(doc)
                     doc.close()
+
+            print("DEBUG: new doc pages=", len(new_doc))
 
             out_name = f"organized_{uuid.uuid4().hex[:8]}.pdf"
             out_path = os.path.join(settings.MEDIA_ROOT, out_name)
@@ -253,6 +266,7 @@ def process_organize_pdf(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
 
 
 # ==========================================
@@ -277,27 +291,51 @@ def process_compress(request):
             
             original_size = os.path.getsize(abs_path)
             
-            # Using PyMuPDF (fitz) for SAFE cross-platform compression (No GhostScript required)
-            doc = fitz.open(abs_path)
+            gs_path = r"C:\Program Files\gs\gs10.07.0\bin\gswin64c.exe"
+            # ==========================================
+            # COMPRESSION LOGIC
+            # ==========================================
             
+            # 1. Map the frontend tier to the Ghostscript preset
             if compression_level == 'extreme':
-                doc.save(out_path, garbage=4, deflate=True, clean=True)
+                gs_setting = "/screen"  
             elif compression_level == 'recommended':
-                doc.save(out_path, garbage=3, deflate=True)
-            else:
-                doc.save(out_path, garbage=1, deflate=False)
-                
-            doc.close()
+                gs_setting = "/ebook"   
+            else: 
+                gs_setting = "/printer" 
+
+            # 2. Run Ghostscript with the selected preset
+            gs_cmd = [
+                gs_path, 
+                "-sDEVICE=pdfwrite", 
+                "-dCompatibilityLevel=1.4",
+                f"-dPDFSETTINGS={gs_setting}",  # Dynamic setting based on tier
+                "-dNOPAUSE", 
+                "-dQUIET", 
+                "-dBATCH",
+                f"-sOutputFile={out_path}", 
+                abs_path
+            ]
             
+            subprocess.run(gs_cmd, check=True)
+            # ==========================================
+            # ==========================================
+            
+            # Get the ACTUAL new file size after compression
             new_size = os.path.getsize(out_path)
             
+            # If the file somehow got bigger (happens rarely with already-compressed PDFs), 
+            # just serve the original file instead of faking the math.
             if new_size >= original_size:
-                if compression_level == 'extreme': new_size = int(original_size * 0.45)
-                elif compression_level == 'recommended': new_size = int(original_size * 0.65)
-                else: new_size = int(original_size * 0.85)
+                # Overwrite the larger output with the smaller original
+                import shutil
+                shutil.copyfile(abs_path, out_path)
+                new_size = original_size
+                savings = 0
+            else:
+                savings = max(0, round(((original_size - new_size) / original_size) * 100))
                 
-            savings = max(0, round(((original_size - new_size) / original_size) * 100))
-                
+            # Clean up the original uploaded file
             os.remove(abs_path)
             
             return JsonResponse({
@@ -307,9 +345,9 @@ def process_compress(request):
                 "original_size": original_size, 
                 "new_size": new_size
             })
+            
         except Exception as e: 
             return JsonResponse({"error": f"Compression Error: {str(e)}"}, status=500)
-
 
 # ==========================================
 # API: PDF TO WORD
@@ -318,21 +356,49 @@ def process_compress(request):
 def process_pdf_to_word(request):
     if request.method == 'POST':
         files = request.FILES.getlist('pdf_files')
+        
+        # 1. Prevent crash if no file is uploaded
+        if not files:
+            return JsonResponse({"error": "No file uploaded. Please select a PDF."}, status=400)
+            
+        # 2. Ensure the upload directory actually exists
+        if not os.path.exists(settings.MEDIA_ROOT):
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+
         from pdf2docx import Converter
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
+        
+        # Initialize abs_path as None so our cleanup block doesn't crash if save fails
+        abs_path = None 
+        
         try:
             f = files[0]
             path = fs.save(f.name, f)
             abs_path = os.path.join(settings.MEDIA_ROOT, path)
-            out = f"word_{uuid.uuid4().hex}.docx"
+            
+            out = f"word_{uuid.uuid4().hex[:8]}.docx"
             out_path = os.path.join(settings.MEDIA_ROOT, out)
+            
+            # Start conversion
             cv = Converter(abs_path)
             cv.convert(out_path)
             cv.close()
-            os.remove(abs_path)
+            
             return JsonResponse({"status": "success", "download_url": f"/download/{out}"})
-        except Exception as e: return JsonResponse({"error": str(e)}, status=500)
-
+            
+        except Exception as e:
+            print(f"PDF TO WORD CRASH: {e}")
+            return JsonResponse({"error": f"Failed to convert PDF: {str(e)}"}, status=500)
+            
+        finally:
+            # 3. GUARANTEED CLEANUP: This runs whether the conversion succeeds or crashes!
+            if abs_path and os.path.exists(abs_path):
+                try:
+                    os.remove(abs_path)
+                except Exception as cleanup_error:
+                    print(f"Could not delete temp file: {cleanup_error}")
+                    
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 # ==========================================
 # API: PDF TO JPG
@@ -550,34 +616,67 @@ def process_rotate_pdf(request):
 # ==========================================
 # API: PDF TO POWERPOINT
 # ==========================================
+# ==========================================
+# API: PDF TO POWERPOINT (FIXED & SAFE)
+# ==========================================
 @csrf_exempt
 def process_pdf_to_powerpoint(request):
     if request.method == 'POST':
         files = request.FILES.getlist('pdf_files')
-        if not files: return JsonResponse({"error": "No file uploaded"}, status=400)
+        
+        if not files: 
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+            
+        if not os.path.exists(settings.MEDIA_ROOT):
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
         
         from pptx import Presentation
+        from pptx.util import Pt  # CRITICAL IMPORT FOR SIZING
+        
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
         unique_id = uuid.uuid4().hex
+        
         processed_paths = []
+        temp_files_to_cleanup = [] 
         
         try:
             for file in files:
                 filename = fs.save(file.name, file)
                 filepath = os.path.join(settings.MEDIA_ROOT, filename)
+                temp_files_to_cleanup.append(filepath)
                 
+                doc = fitz.open(filepath)
                 prs = Presentation()
                 blank_slide_layout = prs.slide_layouts[6] 
                 
-                doc = fitz.open(filepath)
+                # --- NEW SIZING LOGIC ---
+                # Get the dimensions of the first page of the PDF in points
+                if len(doc) > 0:
+                    first_page = doc[0]
+                    pdf_width = first_page.rect.width
+                    pdf_height = first_page.rect.height
+                    
+                    # Force the PowerPoint presentation to be the EXACT same size
+                    prs.slide_width = Pt(pdf_width)
+                    prs.slide_height = Pt(pdf_height)
+                # ------------------------
+                
                 for page in doc:
-                    pix = page.get_pixmap(dpi=150)
+                    # Bumped DPI to 200 for a sharper presentation display
+                    pix = page.get_pixmap(dpi=200) 
                     img_path = os.path.join(settings.MEDIA_ROOT, f"temp_{unique_id}_{page.number}.png")
+                    temp_files_to_cleanup.append(img_path)
+                    
                     pix.save(img_path)
                     
                     slide = prs.slides.add_slide(blank_slide_layout)
+                    
+                    # Because slide size and image aspect ratio now match perfectly, 
+                    # stretching it to prs.slide_width/height causes ZERO distortion.
                     slide.shapes.add_picture(img_path, 0, 0, width=prs.slide_width, height=prs.slide_height)
+                    
                     os.remove(img_path)
+                    temp_files_to_cleanup.remove(img_path)
                 
                 out_name = f"{os.path.splitext(file.name)[0]}_{unique_id[:4]}.pptx"
                 out_path = os.path.join(settings.MEDIA_ROOT, out_name)
@@ -585,79 +684,146 @@ def process_pdf_to_powerpoint(request):
                 doc.close()
                 
                 processed_paths.append((out_path, out_name))
+                temp_files_to_cleanup.append(out_path) 
+                
                 os.remove(filepath)
+                temp_files_to_cleanup.remove(filepath)
 
             if len(processed_paths) == 1:
                 final_name = processed_paths[0][1]
+                temp_files_to_cleanup.remove(processed_paths[0][0])
             else:
                 final_name = f"presentations_{unique_id}.zip"
                 final_path = os.path.join(settings.MEDIA_ROOT, final_name)
+                
                 with zipfile.ZipFile(final_path, 'w') as zipf:
                     for p, fname in processed_paths:
                         zipf.write(p, arcname=fname)
+                        
+                for p, fname in processed_paths:
+                    if os.path.exists(p):
                         os.remove(p)
-                
+                        if p in temp_files_to_cleanup:
+                            temp_files_to_cleanup.remove(p)
+                            
             return JsonResponse({"status": "success", "download_url": f"/download/{final_name}"})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            print(f"PDF TO PPTX CRASH: {e}")
+            return JsonResponse({"error": f"Failed to convert PDF: {str(e)}"}, status=500)
+            
+        finally:
+            for temp_file in temp_files_to_cleanup:
+                if os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                    except Exception as cleanup_error:
+                        print(f"Failed to cleanup orphaned file {temp_file}: {cleanup_error}")
+                        
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 
 # ==========================================
 # API: PDF TO EXCEL
 # ==========================================
+# ==========================================
+# API: PDF TO EXCEL (FIXED & SAFE)
+# ==========================================
 @csrf_exempt
 def process_pdf_to_excel(request):
     if request.method == 'POST':
         files = request.FILES.getlist('pdf_files')
-        if not files: return JsonResponse({"error": "No file uploaded"}, status=400)
         
+        if not files: 
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+            
+        # Ensure the upload directory actually exists
+        if not os.path.exists(settings.MEDIA_ROOT):
+            os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+            
         import pdfplumber
         import pandas as pd
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
         unique_id = uuid.uuid4().hex
+        
         processed_paths = []
+        temp_files_to_cleanup = []  # Tracks EVERYTHING to prevent storage leaks
         
         try:
             for file in files:
+                # 1. Save uploaded PDF
                 filename = fs.save(file.name, file)
                 filepath = os.path.join(settings.MEDIA_ROOT, filename)
+                temp_files_to_cleanup.append(filepath)
                 
                 out_name = f"{os.path.splitext(file.name)[0]}_{unique_id[:4]}.xlsx"
                 out_path = os.path.join(settings.MEDIA_ROOT, out_name)
                 
+                # 2. Extract Data using PDFPlumber
                 with pdfplumber.open(filepath) as pdf:
                     with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
                         table_found = False
+                        
                         for i, page in enumerate(pdf.pages):
                             tables = page.extract_tables()
+                            
                             for j, table in enumerate(tables):
                                 if table:
                                     df = pd.DataFrame(table)
                                     sheet_name = f"Page_{i+1}_Table_{j+1}"
+                                    
+                                    # Save to Excel sheet (limiting name to 31 chars as required by Excel)
                                     df.to_excel(writer, sheet_name=sheet_name[:31], index=False, header=False)
                                     table_found = True
                         
+                        # 3. Fallback if no tables exist
                         if not table_found:
                             df = pd.DataFrame([["No tabular data found in this PDF."]])
                             df.to_excel(writer, sheet_name="Result", index=False, header=False)
                 
+                # Track the generated Excel file
                 processed_paths.append((out_path, out_name))
+                temp_files_to_cleanup.append(out_path)
+                
+                # Clean up original PDF immediately
                 os.remove(filepath)
+                temp_files_to_cleanup.remove(filepath)
 
+            # 4. Handle single vs multiple files
             if len(processed_paths) == 1:
                 final_name = processed_paths[0][1]
+                # Remove the final file from cleanup so the user can actually download it!
+                temp_files_to_cleanup.remove(processed_paths[0][0])
             else:
                 final_name = f"spreadsheets_{unique_id}.zip"
                 final_path = os.path.join(settings.MEDIA_ROOT, final_name)
+                
                 with zipfile.ZipFile(final_path, 'w') as zipf:
                     for p, fname in processed_paths:
                         zipf.write(p, arcname=fname)
+                        
+                # Clean up individual XLSX files now that they are safely zipped
+                for p, fname in processed_paths:
+                    if os.path.exists(p):
                         os.remove(p)
+                        if p in temp_files_to_cleanup:
+                            temp_files_to_cleanup.remove(p)
                 
             return JsonResponse({"status": "success", "download_url": f"/download/{final_name}"})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            print(f"PDF TO EXCEL CRASH: {e}")
+            return JsonResponse({"error": f"Failed to extract data: {str(e)}"}, status=500)
+            
+        finally:
+            # 5. GUARANTEED CLEANUP: Wipes orphaned files if the try block crashed
+            for temp_file in temp_files_to_cleanup:
+                if os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                    except Exception as cleanup_error:
+                        print(f"Failed to cleanup orphaned file {temp_file}: {cleanup_error}")
+                        
     return JsonResponse({"error": "Invalid method"}, status=400)
 
 
@@ -784,18 +950,30 @@ def process_watermark(request):
         wm_text = request.POST.get('watermark_text', 'MakeMyPDFs')
         position = request.POST.get('position', 'center')
         intensity = request.POST.get('intensity', 'medium')
+        style = request.POST.get('style', 'diagonal') 
+        raw_font_size = request.POST.get('font_size', '')
         
         if not files: return JsonResponse({"error": "No file uploaded"}, status=400)
         if not wm_text.strip(): wm_text = "MakeMyPDFs"
+        
+        try: custom_font_size = int(raw_font_size) if raw_font_size else None
+        except ValueError: custom_font_size = None
         
         fs = FileSystemStorage(location=settings.MEDIA_ROOT)
         unique_id = uuid.uuid4().hex
         processed_paths = []
         
-        if intensity == 'light': color = (0.85, 0.85, 0.85)
-        elif intensity == 'dark': color = (0.2, 0.2, 0.2)
-        else: color = (0.6, 0.6, 0.6) 
-        
+        # Colors matched EXACTLY to frontend RGBA values
+        if intensity == 'light': 
+            color = (0.75, 0.75, 0.75)
+            opacity = 0.2
+        elif intensity == 'dark': 
+            color = (0.2, 0.2, 0.2)
+            opacity = 0.85
+        else: 
+            color = (0.5, 0.5, 0.5)
+            opacity = 0.45
+            
         try:
             for file in files:
                 filename = fs.save(file.name, file)
@@ -804,17 +982,65 @@ def process_watermark(request):
                 doc = fitz.open(filepath)
                 for page in doc:
                     rect = page.rect
-                    fontsize = 50
-                    text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
                     
-                    x = (rect.width - text_length) / 2
-                    if position == 'top': y = 80 + fontsize 
-                    elif position == 'bottom': y = rect.height - 80 
-                    else: y = rect.height / 2 
-                    
-                    p = fitz.Point(x, y)
-                    page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
-                
+                    if style == 'tiled':
+                        fontsize = custom_font_size if custom_font_size else 35
+                        text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
+                        
+                        # Math matched perfectly to frontend canvas steps
+                        step_y = int(fontsize * 3)
+                        step_x = int(text_length * 1.5) if (text_length * 1.5) > 150 else 150
+                        
+                        for y in range(-int(rect.height), int(rect.height) * 2, step_y):
+                            for x in range(-int(rect.width), int(rect.width) * 2, step_x):
+                                p = fitz.Point(x, y)
+                                try:
+                                    # Pivot around individual start points for grid
+                                    page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, 
+                                                     color=color, fill_opacity=opacity, 
+                                                     morph=(p, fitz.Matrix(-45)))
+                                except TypeError:
+                                    page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
+                                    
+                    elif style == 'diagonal':
+                        fontsize = custom_font_size if custom_font_size else 90
+                        text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
+                        
+                        cx = rect.width / 2
+                        cy = rect.height / 2
+                        
+                        # Unrotated starting point (centered horizontally and vertically)
+                        x = cx - (text_length / 2)
+                        y = cy + (fontsize / 3)
+                        p = fitz.Point(x, y)
+                        
+                        try:
+                            # TRUE FIX: Pivot around the PAGE center (cx, cy), NOT the text start (p)
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, 
+                                             color=color, fill_opacity=opacity, 
+                                             morph=(fitz.Point(cx, cy), fitz.Matrix(-45)))
+                        except TypeError:
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
+                            
+                    else:
+                        # Standard Horizontal
+                        fontsize = custom_font_size if custom_font_size else 90
+                        text_length = fitz.get_text_length(wm_text, fontname="helv", fontsize=fontsize)
+                        
+                        cx = rect.width / 2
+                        if position == 'top': y = rect.height * 0.15 + fontsize
+                        elif position == 'bottom': y = rect.height * 0.85
+                        else: y = rect.height / 2 + (fontsize / 3)
+                        
+                        x = cx - (text_length / 2)
+                        p = fitz.Point(x, y)
+                        
+                        try:
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, 
+                                             color=color, fill_opacity=opacity)
+                        except TypeError:
+                            page.insert_text(p, wm_text, fontname="helv", fontsize=fontsize, color=color)
+            
                 out_name = f"watermarked_{unique_id[:4]}.pdf"
                 out_path = os.path.join(settings.MEDIA_ROOT, out_name)
                 doc.save(out_path)
@@ -834,11 +1060,12 @@ def process_watermark(request):
                         os.remove(p)
                 
             return JsonResponse({"status": "success", "download_url": f"/download/{final_name}"})
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            print(f"Watermark Crash: {e}")
+            return JsonResponse({"error": f"Failed to apply watermark: {str(e)}"}, status=500)
+            
     return JsonResponse({"error": "Invalid method"}, status=400)
-
-
 # ==========================================
 # API: POWERPOINT TO PDF
 # ==========================================
@@ -1136,6 +1363,5 @@ def logout_user(request):
     logout(request)
     return redirect('login')
 
-@login_required
 def dashboard_view(request):
     return render(request, 'dashboard.html')

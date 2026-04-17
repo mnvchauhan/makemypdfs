@@ -24,8 +24,5 @@ urlpatterns = [
     path('api/organize-pdf', views.process_organize_pdf, name='process_organize_pdf'),
     path('api/pdf-to-pdfa', views.process_pdf_to_pdfa, name='process_pdf_to_pdfa'),
     path('api/sign-pdf', views.process_sign_pdf, name='process_sign_pdf'),
-    path('api/login/', views.login_page, name='login'),
-    path('signup/', views.signup_page, name='signup'),
-    path('logout/', views.logout_user, name='logout'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
 ]
