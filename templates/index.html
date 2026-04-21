@@ -1,238 +1,617 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#000000">
-    <title>MakeMyPDFs | Pro PDF Workspace</title>
+    <meta name="theme-color" content="#ffffff">
+    <title>MakeMyPDFs | Premium PDF Workspace</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; -webkit-tap-highlight-color: transparent; }
-        
-        /* Desktop Hover Effects (Subtle Glow) */
-        .tool-card { transition: all 0.3s ease; position: relative; top: 0; background-color: #0f172a; border: 1px solid #1e293b; }
-        .tool-card:hover { top: -6px; box-shadow: 0 15px 30px -10px rgba(229, 50, 45, 0.15); border-color: #e5322d !important; background-color: #1e293b; }
-        
-        .filter-tab { flex-shrink: 0; transition: all 0.2s; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* 🔥 MOBILE APP MAGIC CSS (OLED DARK MODE) 🔥 */
+    <style>
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #fafafa; 
+            color: #0f172a; 
+            -webkit-tap-highlight-color: transparent; 
+            top: 0 !important; 
+            overflow-x: hidden;
+        }
+        
+        /* Hide Google Translate Bar Completely */
+        .skiptranslate, .goog-te-banner-frame, #goog-gt-tt { display: none !important; }
+        .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
+        
+        /* Custom Scrollbar for Mega Menus */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Smooth Scroll Animations */
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+        
+        /* Flow Line */
+        .flow-line {
+            background: linear-gradient(90deg, #f1f5f9 0%, #e5322d 50%, #f1f5f9 100%);
+            background-size: 200% 100%;
+            animation: flowLine 2.5s linear infinite;
+        }
+        @keyframes flowLine { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+        /* Animated Text */
+        .text-gradient-animate {
+            background: linear-gradient(270deg, #e5322d, #f97316, #e5322d);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shineText 3s linear infinite;
+        }
+        @keyframes shineText { to { background-position: 200% center; } }
+
+        /* Floating elements */
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float-delay { animation: float 4s ease-in-out infinite 1.5s; }
+
+        @keyframes orbit-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .orbit-ring { animation: orbit-spin 25s linear infinite; }
+        .orbit-ring-reverse { animation: orbit-spin 35s linear infinite reverse; }
+
+        /* QR Scan Animation */
+        @keyframes scan-line { 0% { top: 0%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .animate-scan::after { content: ''; position: absolute; left: 0; width: 100%; height: 4px; background: #22c55e; box-shadow: 0 0 15px #22c55e; animation: scan-line 2s linear infinite; }
+
+        /* Premium Tool Cards - Restored flex-col inside inline styles via tailwind */
+        .tool-card { 
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            background: #ffffff;
+        }
+        .tool-card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: 0 30px 60px -15px rgba(229, 50, 45, 0.1); 
+        }
+
+        /* Mega Menu Link Hover Physics */
+        .mega-link { transition: all 0.2s ease; }
+        .mega-link:hover { background-color: #f8fafc; color: #e5322d; transform: translateX(4px); }
+        .mega-link:hover .icon-box { transform: scale(1.1); }
+
         @media (max-width: 768px) {
-            body { 
-                background-color: #000000; /* Pure Black for OLED App feel */
-                padding-bottom: 85px; 
-            }
-            
-            /* iOS Style App Cards in Dark Mode */
-            .tool-card {
-                padding: 16px !important;
-                height: 120px !important; /* Square */
-                border-radius: 20px !important; /* Extra rounded like iOS */
-                border: 1px solid #27272a !important;
-                background-color: #18181b !important; /* Dark Grey */
-                align-items: center !important;
-                justify-content: center !important;
-                text-align: center !important;
-                box-shadow: none !important;
-            }
-            .tool-card div:first-child { 
-                width: 46px !important;
-                height: 46px !important;
-                margin-bottom: 8px !important;
-                border-radius: 14px !important;
-                background-color: rgba(229, 50, 45, 0.1) !important;
-            }
-            .tool-card i { font-size: 1.4rem !important; }
-            .tool-card h3 { font-size: 13px !important; font-weight: 700 !important; margin: 0 !important; line-height: 1.2 !important; color: #f4f4f5 !important; }
-            .tool-card p { display: none !important; } 
-            
+            body { padding-bottom: 90px; }
             .desktop-only { display: none !important; }
         }
     </style>
 </head>
-<body class="antialiased selection:bg-[#e5322d] selection:text-white">
+<body class="antialiased selection:bg-[#e5322d] selection:text-white relative">
 
-    <header class="bg-[#020617]/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-[100]">
-        <div class="max-w-[1600px] mx-auto flex items-center justify-between px-4 lg:px-10 h-16 md:h-24">
-            <div class="flex items-center gap-8">
-                <a href="/" class="flex items-center gap-3 md:gap-4 text-[22px] md:text-[28px] font-black tracking-tighter text-white">
-                    <div class="bg-[#e5322d] text-white w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-lg md:rounded-xl shadow-lg shadow-red-500/20">
-                        <i class="fa-solid fa-file-pdf text-sm md:text-xl"></i>
+    <div id="google_translate_element" style="position: absolute; left: -9999px; top: -9999px; z-index: -9999;"></div>
+
+    <header class="bg-white/95 backdrop-blur-xl border-b border-slate-200/80 sticky top-0 z-[100] transition-all duration-300">
+        <div class="max-w-[1600px] mx-auto flex items-center justify-between px-6 lg:px-12 h-20 md:h-24">
+            
+            <div class="flex items-center gap-10 xl:gap-12 h-full">
+                <a href="/" class="flex items-center gap-3 text-[26px] md:text-[30px] font-black tracking-tight text-slate-900 group">
+                    <div class="bg-gradient-to-br from-[#e5322d] to-[#c82520] text-white w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-[12px] shadow-lg shadow-red-500/20 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-file-pdf text-xl md:text-2xl"></i>
                     </div>
                     <span>MakeMy<span class="text-[#e5322d]">PDFs</span></span>
                 </a>
                 
-                <nav class="hidden lg:flex gap-8 text-[15px] font-bold uppercase tracking-widest text-slate-400 ml-8">
-                    <a href="/tool/merge" class="hover:text-white transition-colors py-5">Merge</a>
-                    <a href="/tool/split" class="hover:text-white transition-colors py-5">Split</a>
-                    <a href="/tool/compress" class="hover:text-white transition-colors py-5">Compress</a>
+                <nav class="hidden lg:flex items-center gap-8 text-[14px] font-bold text-slate-600 uppercase tracking-wider h-full ml-4">
+                    <a href="/tool/merge" class="hover:text-[#e5322d] transition-colors h-full flex items-center border-b-2 border-transparent hover:border-[#e5322d]">Merge</a>
+                    <a href="/tool/split" class="hover:text-[#e5322d] transition-colors h-full flex items-center border-b-2 border-transparent hover:border-[#e5322d]">Split</a>
+                    <a href="/tool/compress" class="hover:text-[#e5322d] transition-colors h-full flex items-center border-b-2 border-transparent hover:border-[#e5322d]">Compress</a>
+                    
+                    <div class="relative group h-full flex items-center">
+                        <div class="hover:text-[#e5322d] transition-colors h-full flex items-center gap-1.5 cursor-pointer border-b-2 border-transparent hover:border-[#e5322d]">
+                            More Tools <i class="fa-solid fa-chevron-down text-[10px] group-hover:rotate-180 transition-transform duration-300 mt-0.5"></i>
+                        </div>
+                        
+                        <div class="absolute left-[-200px] top-[100%] pt-2 w-[850px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 z-[120]">
+                            <div class="bg-white border border-slate-200 shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[24px] p-8 grid grid-cols-3 gap-8 relative">
+                                
+                                <div>
+                                    <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Organize & Optimize</h4>
+                                    <ul class="flex flex-col gap-1 text-[14px] font-semibold text-slate-700 normal-case tracking-normal">
+                                        <li><a href="/tool/merge" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#e5322d] w-6 text-center transition-transform"><i class="fa-solid fa-layer-group"></i></div> Merge PDF</a></li>
+                                        <li><a href="/tool/split" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#f97316] w-6 text-center transition-transform"><i class="fa-solid fa-arrows-split-up-and-left"></i></div> Split PDF</a></li>
+                                        <li><a href="/tool/remove-pages" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#f97316] w-6 text-center transition-transform"><i class="fa-solid fa-file-circle-minus"></i></div> Remove Pages</a></li>
+                                        <li><a href="/tool/organize" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#eab308] w-6 text-center transition-transform"><i class="fa-solid fa-arrow-down-a-z"></i></div> Organize PDF</a></li>
+                                        <li><a href="/tool/compress" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#22c55e] w-6 text-center transition-transform"><i class="fa-solid fa-compress"></i></div> Compress PDF</a></li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Convert to/from PDF</h4>
+                                    <ul class="flex flex-col gap-1 text-[14px] font-semibold text-slate-700 normal-case tracking-normal">
+                                        <li><a href="/tool/word-to-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#3b82f6] w-6 text-center transition-transform"><i class="fa-solid fa-file-word"></i></div> Word to PDF</a></li>
+                                        <li><a href="/tool/powerpoint-to-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#f15642] w-6 text-center transition-transform"><i class="fa-solid fa-file-powerpoint"></i></div> PPT to PDF</a></li>
+                                        <li><a href="/tool/excel-to-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#10b981] w-6 text-center transition-transform"><i class="fa-solid fa-file-excel"></i></div> Excel to PDF</a></li>
+                                        <li><a href="/tool/jpg-to-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#eab308] w-6 text-center transition-transform"><i class="fa-solid fa-file-image"></i></div> JPG to PDF</a></li>
+                                        <li><a href="/tool/pdf-to-word" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#3b82f6] w-6 text-center transition-transform"><i class="fa-solid fa-file-export"></i></div> PDF to Word</a></li>
+                                    </ul>
+                                </div>
+
+                                <div>
+                                    <h4 class="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2">Edit & Protect</h4>
+                                    <ul class="flex flex-col gap-1 text-[14px] font-semibold text-slate-700 normal-case tracking-normal">
+                                        <li><a href="/tool/edit-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#a855f7] w-6 text-center transition-transform"><i class="fa-solid fa-pen-to-square"></i></div> Edit PDF</a></li>
+                                        <li><a href="/tool/sign-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#0ea5e9] w-6 text-center transition-transform"><i class="fa-solid fa-signature"></i></div> Sign PDF</a></li>
+                                        <li><a href="/tool/watermark" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#ec4899] w-6 text-center transition-transform"><i class="fa-solid fa-stamp"></i></div> Watermark</a></li>
+                                        <li><a href="/tool/protect-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-slate-600 w-6 text-center transition-transform"><i class="fa-solid fa-shield-halved"></i></div> Protect PDF</a></li>
+                                        <li><a href="/tool/unlock-pdf" class="mega-link flex items-center gap-3 py-2.5 px-3 rounded-lg"><div class="icon-box text-[#e5322d] w-6 text-center transition-transform"><i class="fa-solid fa-unlock"></i></div> Unlock PDF</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </nav>
             </div>
             
-            <div class="flex items-center gap-6 text-[15px] font-bold">
-                <i class="fa-regular fa-bell text-xl md:hidden text-slate-300"></i>
+            <div class="flex items-center gap-6 h-full">
+                
+                <div class="hidden md:flex relative group cursor-pointer desktop-only h-full items-center z-[110]">
+                    <div class="flex items-center gap-2 text-[14px] font-bold text-slate-700 hover:text-slate-900 transition py-2 px-4 rounded-full bg-slate-100 border border-slate-200">
+                        <i class="fa-solid fa-language text-lg text-[#e5322d]"></i> <span id="current-lang">English</span> <i class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                    </div>
+                    
+                    <div class="absolute right-0 top-[100%] pt-2 w-[700px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2">
+                        <div class="bg-white border border-slate-200 shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-[24px] p-6 max-h-[60vh] overflow-y-auto custom-scrollbar relative">
+                            <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 sticky top-0 bg-white/90 backdrop-blur pb-2 z-10">Select Language</p>
+                            
+                            <div class="grid grid-cols-4 gap-2 text-[14px] font-semibold text-slate-700">
+                                <div class="flex flex-col gap-1">
+                                    <button onclick="translatePage('en', 'English')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-en"></i>English</button>
+                                    <button onclick="translatePage('es', 'Español')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-es"></i>Español</button>
+                                    <button onclick="translatePage('fr', 'Français')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-fr"></i>Français</button>
+                                    <button onclick="translatePage('de', 'Deutsch')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-de"></i>Deutsch</button>
+                                    <button onclick="translatePage('it', 'Italiano')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-it"></i>Italiano</button>
+                                    <button onclick="translatePage('pt', 'Português')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-pt"></i>Português</button>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <button onclick="translatePage('hi', 'हिन्दी')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-hi"></i>हिन्दी</button>
+                                    <button onclick="translatePage('bn', 'বাংলা')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-bn"></i>বাংলা</button>
+                                    <button onclick="translatePage('pa', 'ਪੰਜਾਬੀ')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-pa"></i>ਪੰਜਾਬੀ</button>
+                                    <button onclick="translatePage('gu', 'ગુજરાતી')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-gu"></i>ગુજરાતી</button>
+                                    <button onclick="translatePage('mr', 'मराठी')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-mr"></i>मराठी</button>
+                                    <button onclick="translatePage('ta', 'தமிழ்')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-ta"></i>தமிழ்</button>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <button onclick="translatePage('zh-CN', '中文 (简体)')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-zh-CN"></i>中文 (简体)</button>
+                                    <button onclick="translatePage('zh-TW', '中文 (繁體)')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-zh-TW"></i>中文 (繁體)</button>
+                                    <button onclick="translatePage('ja', '日本語')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-ja"></i>日本語</button>
+                                    <button onclick="translatePage('ko', '한국어')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-ko"></i>한국어</button>
+                                    <button onclick="translatePage('th', 'ไทย')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-th"></i>ไทย</button>
+                                    <button onclick="translatePage('vi', 'Tiếng Việt')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-vi"></i>Tiếng Việt</button>
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <button onclick="translatePage('ru', 'Русский')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-ru"></i>Русский</button>
+                                    <button onclick="translatePage('uk', 'Українська')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-uk"></i>Українська</button>
+                                    <button onclick="translatePage('pl', 'Polski')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-pl"></i>Polski</button>
+                                    <button onclick="translatePage('tr', 'Türkçe')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-tr"></i>Türkçe</button>
+                                    <button onclick="translatePage('ar', 'العربية')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-ar"></i>العربية</button>
+                                    <button onclick="translatePage('he', 'עברית')" class="text-left px-3 py-2 rounded-lg hover:bg-red-50 hover:text-[#e5322d] transition"><i class="fa-solid fa-check text-[#e5322d] mr-2 hidden lang-check" id="check-he"></i>עברית</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="#" class="hidden md:inline-flex text-slate-600 font-bold hover:text-slate-900 transition">Log in</a>
+                <a href="#" class="hidden md:inline-flex bg-slate-900 text-white px-7 py-3 rounded-xl font-bold text-[14px] hover:bg-[#e5322d] transition-all shadow-lg hover:shadow-red-500/30 transform hover:-translate-y-0.5">
+                    Sign up free
+                </a>
             </div>
         </div>
     </header>
 
-    <section class="pt-8 md:pt-24 pb-6 md:pb-16 text-center px-4 relative">
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-red-500/10 blur-[120px] rounded-full pointer-events-none desktop-only"></div>
-
-        <h1 class="text-[28px] md:text-[64px] font-extrabold leading-tight mb-4 md:mb-8 tracking-tight text-white max-w-6xl mx-auto relative z-10">
-            Your Ultimate PDF <span class="text-[#e5322d]">Workspace</span>
-        </h1>
-        <p class="text-[15px] md:text-[22px] text-slate-400 max-w-4xl mx-auto mb-8 md:mb-14 leading-relaxed desktop-only relative z-10">
-            Every tool you need to use PDFs, at your fingertips. All are 100% FREE and easy to use! Merge, split, compress, convert, rotate, unlock and watermark PDFs with just a few clicks.
-        </p>
-        
-        <div class="flex items-center justify-start md:justify-center gap-2 md:gap-4 overflow-x-auto no-scrollbar w-full max-w-[1400px] mx-auto pb-4 px-2 relative z-10">
-            <button class="filter-tab active bg-[#e5322d] text-white border-none px-6 py-3 rounded-full md:rounded-xl text-[13px] md:text-[15px] font-bold shadow-lg shadow-red-500/20" data-filter="all">All Tools</button>
-            <button class="filter-tab bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800 px-6 py-3 rounded-full md:rounded-xl text-[13px] md:text-[15px] font-bold" data-filter="organize">Organize</button>
-            <button class="filter-tab bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800 px-6 py-3 rounded-full md:rounded-xl text-[13px] md:text-[15px] font-bold" data-filter="optimize">Optimize</button>
-            <button class="filter-tab bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800 px-6 py-3 rounded-full md:rounded-xl text-[13px] md:text-[15px] font-bold" data-filter="convert">Convert</button>
-            <button class="filter-tab bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800 px-6 py-3 rounded-full md:rounded-xl text-[13px] md:text-[15px] font-bold" data-filter="edit">Edit</button>
-            <button class="filter-tab bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800 px-6 py-3 rounded-full md:rounded-xl text-[13px] md:text-[15px] font-bold" data-filter="security">Security</button>
+    <section class="pt-24 md:pt-36 pb-20 md:pb-28 text-center px-6 relative bg-white border-b border-slate-100 overflow-hidden">
+        <div class="relative z-10 reveal">
+            <h1 class="text-[40px] md:text-[68px] font-black leading-[1.1] mb-6 text-slate-900 max-w-[1100px] mx-auto tracking-tighter">
+                The professional workspace to <br class="hidden md:block">
+                <span class="text-gradient-animate">Create, Edit & Manage PDFs</span>
+            </h1>
+            <p class="text-[16px] md:text-[22px] text-slate-500 font-medium max-w-[800px] mx-auto mb-14 leading-relaxed">
+                Experience blazing-fast document processing. A complete suite of 24 premium tools running securely directly in your browser. 100% Free.
+            </p>
+            
+            <div class="flex items-center justify-start md:justify-center gap-3 overflow-x-auto no-scrollbar w-full max-w-[1300px] mx-auto pb-4 px-2">
+                <button class="filter-tab active bg-[#e5322d] text-white border border-[#e5322d] px-8 py-3 rounded-full text-[15px] font-bold shadow-lg shadow-red-500/20" data-filter="all">All Tools</button>
+                <button class="filter-tab bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-8 py-3 rounded-full text-[15px] font-bold transition" data-filter="organize">Organize</button>
+                <button class="filter-tab bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-8 py-3 rounded-full text-[15px] font-bold transition" data-filter="convert">Convert</button>
+                <button class="filter-tab bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-8 py-3 rounded-full text-[15px] font-bold transition" data-filter="edit">Edit & Sign</button>
+                <button class="filter-tab bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 px-8 py-3 rounded-full text-[15px] font-bold transition" data-filter="security">Security</button>
+            </div>
         </div>
     </section>
 
-    <div class="max-w-[1600px] mx-auto px-4 md:px-10 pb-10 md:pb-32 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-8 relative z-10">
-        
-        <a href="/tool/merge" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="organize">
-            <div class="text-[#e5322d] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#e5322d]/10"><i class="fa-solid fa-layer-group text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Merge PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Combine PDFs in the order you want with the easiest PDF merger available.</p>
-        </a>
+    <section class="bg-[#f8fafc] py-24 md:py-32 relative z-10 border-b border-slate-100">
+        <div class="max-w-[1500px] mx-auto px-6 lg:px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            
+            <a href="/tool/merge" class="group tool-card reveal flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-red-200" data-category="organize">
+                <div class="w-14 h-14 shrink-0 bg-red-50 text-[#e5322d] rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-layer-group"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Merge PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Combine multiple PDFs and images into one single file. Drag and drop to reorder easily.</p>
+            </a>
+            <a href="/tool/split" class="group tool-card reveal delay-100 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-orange-200" data-category="organize">
+                <div class="w-14 h-14 shrink-0 bg-orange-50 text-orange-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-arrows-split-up-and-left"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Split PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Extract specific pages from your PDF or split it into multiple separate files instantly.</p>
+            </a>
+            <a href="/tool/remove-pages" class="group tool-card reveal delay-200 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-orange-200" data-category="organize">
+                <div class="w-14 h-14 shrink-0 bg-orange-50 text-orange-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-circle-minus"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Remove Pages</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Select and delete pages you don't need from your PDF document easily.</p>
+            </a>
+            <a href="/tool/organize" class="group tool-card reveal delay-300 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-yellow-200" data-category="organize">
+                <div class="w-14 h-14 shrink-0 bg-yellow-50 text-yellow-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-arrow-down-a-z"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Organize PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Sort, add, or delete pages from your PDF file in a highly visual interface.</p>
+            </a>
+            <a href="/tool/rotate" class="group tool-card reveal flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-yellow-200" data-category="organize">
+                <div class="w-14 h-14 shrink-0 bg-yellow-50 text-yellow-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-rotate-right"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Rotate PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Fix upside-down pages. Rotate single pages or the entire document effortlessly.</p>
+            </a>
 
-        <a href="/tool/split" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="organize">
-            <div class="text-[#f15642] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#f15642]/10"><i class="fa-solid fa-arrows-split-up-and-left text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Split PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Separate one page or a whole set for easy conversion into independent files.</p>
-        </a>
+            <a href="/tool/word-to-pdf" class="group tool-card reveal delay-100 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-blue-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-blue-50 text-blue-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-pdf"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Word to PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Lock your formatting by converting DOC and DOCX text files into standard PDFs.</p>
+            </a>
+            <a href="/tool/powerpoint-to-pdf" class="group tool-card reveal delay-200 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-orange-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-orange-50 text-[#f15642] rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-pdf"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Powerpoint to PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Make PPT and PPTX slideshows easy to view by converting them to PDF format.</p>
+            </a>
+            <a href="/tool/excel-to-pdf" class="group tool-card reveal delay-300 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-emerald-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-emerald-50 text-emerald-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-pdf"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Excel to PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Convert Excel spreadsheets to PDF to make them un-editable and easy to share.</p>
+            </a>
+            <a href="/tool/jpg-to-pdf" class="group tool-card reveal flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-yellow-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-yellow-50 text-yellow-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-image"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">JPG to PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Convert JPG, PNG, and TIFF image files into a single, cohesive PDF document.</p>
+            </a>
+            <a href="/tool/html-to-pdf" class="group tool-card reveal delay-100 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-rose-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-rose-50 text-rose-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-brands fa-html5"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">HTML to PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Convert web pages into PDF documents instantly. Just paste the URL.</p>
+            </a>
 
-        <a href="/tool/compress" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="optimize">
-            <div class="text-[#82c84a] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#82c84a]/10"><i class="fa-solid fa-compress text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Compress PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Reduce file size dramatically while optimizing for maximal PDF quality.</p>
-        </a>
+            <a href="/tool/pdf-to-word" class="group tool-card reveal delay-200 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-blue-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-blue-50 text-blue-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-word"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">PDF to Word</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Convert your uneditable PDF files into fully editable DOCX documents instantly.</p>
+            </a>
+            <a href="/tool/pdf-to-powerpoint" class="group tool-card reveal delay-300 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-orange-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-orange-50 text-[#f15642] rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-powerpoint"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">PDF to PPT</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Turn your PDF files into easy to edit PPT and PPTX slideshows effortlessly.</p>
+            </a>
+            <a href="/tool/pdf-to-excel" class="group tool-card reveal flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-emerald-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-emerald-50 text-emerald-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-excel"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">PDF to Excel</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Pull raw tabular data straight from PDFs into functional Excel spreadsheets.</p>
+            </a>
+            <a href="/tool/pdf-to-jpg" class="group tool-card reveal delay-100 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-yellow-200" data-category="convert">
+                <div class="w-14 h-14 shrink-0 bg-yellow-50 text-yellow-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-image"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">PDF to JPG</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Convert each PDF page into a high-res JPG image, or extract all images inside.</p>
+            </a>
 
-        <a href="/tool/pdf-to-word" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="convert">
-            <div class="text-[#3b82f6] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#3b82f6]/10"><i class="fa-solid fa-file-word text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">PDF to Word</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Easily convert your PDF files into easy to edit DOCX documents.</p>
-        </a>
+            <a href="/tool/compress" class="group tool-card reveal delay-200 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-green-200" data-category="edit">
+                <div class="w-14 h-14 shrink-0 bg-green-50 text-green-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-compress"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Compress PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Reduce the file size of your PDF drastically while maintaining perfect visual quality.</p>
+            </a>
+            <a href="/tool/edit-pdf" class="group tool-card reveal delay-300 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-purple-200" data-category="edit">
+                <div class="w-14 h-14 shrink-0 bg-purple-50 text-purple-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-pen-to-square"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Edit PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Add text, images, shapes, or freehand annotations directly onto your PDF.</p>
+            </a>
+            <a href="/tool/sign-pdf" class="group tool-card reveal flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-sky-200" data-category="edit">
+                <div class="w-14 h-14 shrink-0 bg-sky-50 text-sky-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-signature"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Sign PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Sign documents yourself digitally or request legal electronic signatures from others.</p>
+            </a>
+            <a href="/tool/watermark" class="group tool-card reveal delay-100 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-pink-200" data-category="edit">
+                <div class="w-14 h-14 shrink-0 bg-pink-50 text-pink-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-stamp"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Watermark</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Stamp an image or text over your PDF. Choose typography, transparency, and position.</p>
+            </a>
+            <a href="/tool/page-numbers" class="group tool-card reveal delay-200 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-indigo-200" data-category="edit">
+                <div class="w-14 h-14 shrink-0 bg-indigo-50 text-indigo-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list-ol"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Page Numbers</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Insert page numbers into PDFs easily. Choose position, dimensions, and typography.</p>
+            </a>
+            <a href="/tool/ocr-pdf" class="group tool-card reveal delay-300 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-teal-200" data-category="edit">
+                <div class="w-14 h-14 shrink-0 bg-teal-50 text-teal-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-eye"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">OCR PDF <span class="bg-[#e5322d] text-white text-[10px] px-2 py-0.5 rounded-full ml-2 align-middle">PRO</span></h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Make scanned PDFs searchable and selectable using advanced Optical Character Recognition.</p>
+            </a>
 
-        <a href="/tool/pdf-to-powerpoint" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="convert">
-            <div class="text-[#f15642] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#f15642]/10"><i class="fa-solid fa-file-powerpoint text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">PDF to PPT</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Turn your PDF files into easy to edit PPT and PPTX slideshows.</p>
-        </a>
+            <a href="/tool/protect-pdf" class="group tool-card reveal flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-slate-300" data-category="security">
+                <div class="w-14 h-14 shrink-0 bg-slate-100 text-slate-600 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Protect PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Protect files with strong passwords and encrypt documents to prevent unauthorized access.</p>
+            </a>
+            <a href="/tool/unlock-pdf" class="group tool-card reveal delay-100 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-red-200" data-category="security">
+                <div class="w-14 h-14 shrink-0 bg-red-50 text-[#e5322d] rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-unlock"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Unlock PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Remove PDF password security and restrictions, giving you freedom to use your PDFs.</p>
+            </a>
+            <a href="/tool/repair-pdf" class="group tool-card reveal delay-200 flex flex-col p-8 rounded-[24px] border border-slate-200 hover:border-violet-200" data-category="security">
+                <div class="w-14 h-14 shrink-0 bg-violet-50 text-violet-500 rounded-[16px] flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform"><i class="fa-solid fa-wrench"></i></div>
+                <h3 class="text-[18px] md:text-[20px] font-bold mb-2 text-slate-900 tracking-tight">Repair PDF</h3>
+                <p class="text-slate-500 text-[14px] leading-relaxed">Fix a corrupted, damaged, or broken PDF document and recover your data instantly.</p>
+            </a>
+        </div>
+    </section>
 
-        <a href="/tool/pdf-to-excel" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="convert">
-            <div class="text-[#10b981] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#10b981]/10"><i class="fa-solid fa-file-excel text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">PDF to Excel</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Pull data straight from PDFs into Excel spreadsheets in a few short seconds.</p>
-        </a>
+    <section class="py-24 bg-white border-b border-slate-100 overflow-hidden relative">
+        <div class="max-w-[1200px] mx-auto px-6 text-center">
+            <h2 class="text-[32px] md:text-[46px] font-black text-slate-900 mb-4 tracking-tight reveal">How it works</h2>
+            <p class="text-slate-500 text-[16px] md:text-[20px] mb-20 max-w-2xl mx-auto reveal delay-100">Process your documents securely in 3 simple steps. No downloads required.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative reveal delay-200">
+                <div class="hidden md:block absolute top-[40px] left-[20%] right-[20%] h-[3px] flow-line rounded-full z-0"></div>
+                
+                <div class="relative z-10 flex flex-col items-center group cursor-pointer hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-white border-2 border-slate-100 text-slate-400 group-hover:text-[#e5322d] group-hover:border-[#e5322d] rounded-[24px] flex items-center justify-center text-3xl mb-6 shadow-sm transition-colors duration-300"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <h3 class="text-[20px] font-bold text-slate-900 mb-3">1. Upload</h3>
+                    <p class="text-slate-500 text-[14px] max-w-[250px] leading-relaxed">Drag & drop your PDF file securely into the workspace.</p>
+                </div>
+                
+                <div class="relative z-10 flex flex-col items-center group cursor-pointer hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-white border-2 border-slate-100 text-slate-400 group-hover:text-[#e5322d] group-hover:border-[#e5322d] rounded-[24px] flex items-center justify-center text-3xl mb-6 shadow-sm transition-colors duration-300"><i class="fa-solid fa-gears"></i></div>
+                    <h3 class="text-[20px] font-bold text-slate-900 mb-3">2. Process</h3>
+                    <p class="text-slate-500 text-[14px] max-w-[250px] leading-relaxed">Our powerful cloud servers instantly apply the modifications.</p>
+                </div>
 
-        <a href="/tool/word-to-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="convert">
-            <div class="text-[#3b82f6] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#3b82f6]/10"><i class="fa-solid fa-file-pdf text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Word to PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Make DOC and DOCX files easy to read by converting them to PDF.</p>
-        </a>
-
-        <a href="/tool/edit-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="edit">
-            <div class="text-[#a855f7] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#a855f7]/10"><i class="fa-solid fa-pen-to-square text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Edit PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Add text, images, shapes or freehand annotations to a PDF document.</p>
-        </a>
-
-        <a href="/tool/pdf-to-jpg" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="convert">
-            <div class="text-[#eab308] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#eab308]/10"><i class="fa-solid fa-image text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">PDF to JPG</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Convert each PDF page into a JPG or extract all images contained in a PDF.</p>
-        </a>
-
-        <a href="/tool/jpg-to-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="convert">
-            <div class="text-[#eab308] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#eab308]/10"><i class="fa-solid fa-file-image text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">JPG to PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Convert JPG images to PDF in seconds. Easily adjust orientation and margins.</p>
-        </a>
-
-        <a href="/tool/sign-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="edit">
-            <div class="text-[#0ea5e9] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#0ea5e9]/10"><i class="fa-solid fa-signature text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Sign PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Sign yourself or request electronic signatures securely from others.</p>
-        </a>
-
-        <a href="/tool/watermark" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="edit">
-            <div class="text-[#ec4899] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#ec4899]/10"><i class="fa-solid fa-stamp text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Watermark</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Stamp an image or text over your PDF in seconds. Choose position and transparency.</p>
-        </a>
-
-        <a href="/tool/rotate-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="organize">
-            <div class="text-[#eab308] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#eab308]/10"><i class="fa-solid fa-rotate-right text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Rotate PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Rotate your PDFs the way you need them. You can even rotate multiple PDFs at once!</p>
-        </a>
-
-        <a href="/tool/protect-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="security">
-            <div class="text-slate-400 mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-slate-700"><i class="fa-solid fa-shield-halved text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Protect PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Protect PDF files with a password. Encrypt PDF documents to prevent unauthorized access.</p>
-        </a>
-
-        <a href="/tool/unlock-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="security">
-            <div class="text-[#e5322d] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#e5322d]/10"><i class="fa-solid fa-unlock text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Unlock PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Remove PDF password security, giving you the freedom to use your PDFs as you want.</p>
-        </a>
-
-        <a href="/tool/organize-pdf" class="tool-card p-8 flex flex-col rounded-3xl md:min-h-[280px]" data-category="organize">
-            <div class="text-[#ef4444] mb-6 w-16 h-16 flex items-center justify-center rounded-2xl bg-[#ef4444]/10"><i class="fa-solid fa-arrow-down-a-z text-3xl"></i></div>
-            <h3 class="text-[20px] font-bold mb-3 text-white">Organize PDF</h3>
-            <p class="text-slate-400 text-[15px] leading-relaxed">Sort pages of your PDF file however you like. Delete PDF pages or add PDF pages.</p>
-        </a>
-    </div>
-
-    <footer class="bg-[#020617] text-white pt-24 pb-12 border-t border-slate-800 desktop-only">
-        <div class="max-w-[1600px] mx-auto px-6 lg:px-10">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-                <a href="/" class="flex items-center gap-3 text-[28px] font-black tracking-tighter">
-                    <div class="bg-[#e5322d] text-white w-12 h-12 flex items-center justify-center rounded-xl shadow-[0_0_15px_rgba(229,50,45,0.3)]">
-                        <i class="fa-solid fa-file-pdf"></i>
-                    </div>
-                    <span>MakeMy<span class="text-[#e5322d]">PDFs</span></span>
-                </a>
-                <div class="flex gap-10 text-[15px] font-medium text-slate-400">
-                    <a href="#" class="hover:text-white transition">API</a>
-                    <a href="#" class="hover:text-white transition">Privacy</a>
-                    <a href="#" class="hover:text-white transition">Terms</a>
+                <div class="relative z-10 flex flex-col items-center group cursor-pointer hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-[#e5322d] text-white rounded-[24px] flex items-center justify-center text-3xl mb-6 shadow-lg shadow-red-500/40 group-hover:scale-110 transition-transform duration-300"><i class="fa-solid fa-download"></i></div>
+                    <h3 class="text-[20px] font-bold text-slate-900 mb-3">3. Download</h3>
+                    <p class="text-slate-500 text-[14px] max-w-[250px] leading-relaxed">Grab your perfectly formatted file back to your device.</p>
                 </div>
             </div>
-            <div class="border-t border-slate-800 pt-8 flex justify-between items-center text-slate-500 text-sm">
-                <p>© MakeMyPDFs 2026. Built for professionals.</p>
+        </div>
+    </section>
+
+    <section class="py-24 md:py-32 bg-slate-50 border-b border-slate-200">
+        <div class="max-w-[1400px] mx-auto px-6 lg:px-10">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                
+                <div class="reveal">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-200/60 text-slate-700 font-bold text-xs uppercase tracking-widest mb-6">
+                        <i class="fa-solid fa-laptop-code"></i> Developer Built
+                    </div>
+                    <h2 class="text-[32px] md:text-[46px] font-black text-slate-900 mb-6 tracking-tight leading-[1.15]">The story behind<br>MakeMyPDFs.</h2>
+                    
+                    <p class="text-[15px] md:text-[17px] text-slate-600 leading-relaxed mb-6">
+                        Hi, I'm <strong>Manav Chauhan</strong>, a full-stack developer from Delhi. I was working on a project and needed to quickly merge some PDFs. Every tool I found was either painfully slow, bombarded me with ads, or asked for a $15/month subscription just to click a button.
+                    </p>
+                    <p class="text-[15px] md:text-[17px] text-slate-600 leading-relaxed mb-8">
+                        That frustration sparked an idea. I decided to build the exact tool I wished existed: clean, lightning-fast, and 100% free. What started as a late-night coding experiment is now processing thousands of files securely for professionals worldwide.
+                    </p>
+                    
+                    <div class="flex flex-wrap gap-4">
+                        <a href="https://mnvchauhan.site" target="_blank" class="bg-white border border-slate-200 text-slate-700 hover:text-[#e5322d] hover:border-red-200 px-6 py-3 rounded-xl font-bold text-[14px] transition shadow-sm inline-flex items-center gap-2">
+                            <i class="fa-solid fa-globe"></i> View Portfolio
+                        </a>
+                        <a href="https://github.com/mnvchauhan/makemypdfs.git" target="_blank" class="bg-slate-900 text-white hover:bg-slate-800 px-6 py-3 rounded-xl font-bold text-[14px] transition shadow-sm inline-flex items-center gap-2">
+                            <i class="fa-brands fa-github"></i> Source Code
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[32px] p-8 md:p-12 shadow-2xl shadow-slate-200 border border-slate-100 reveal delay-200 relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-orange-100 rounded-full blur-[40px] pointer-events-none"></div>
+                    
+                    <div class="relative z-10 text-center">
+                        <div class="w-16 h-16 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-6">
+                            <i class="fa-solid fa-heart"></i>
+                        </div>
+                        <h3 class="text-[26px] font-black text-slate-900 mb-3">Support the Project</h3>
+                        <p class="text-[15px] text-slate-500 mb-8 leading-relaxed max-w-[400px] mx-auto">
+                            Running secure, blazing-fast servers costs money. If my tools saved you time today, consider fueling the code!
+                        </p>
+                        
+                        <a href="#" class="inline-flex items-center justify-center gap-3 w-full bg-[#f97316] text-white px-8 py-4 rounded-xl font-bold text-[16px] hover:bg-[#ea580c] hover:-translate-y-1 transition-all duration-300 shadow-[0_10px_20px_rgba(249,115,22,0.3)]">
+                            <i class="fa-solid fa-bowl-food"></i> Buy me Chole Bhature
+                        </a>
+                        
+                        <p class="text-xs text-slate-400 font-bold mt-6 uppercase tracking-widest flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-qrcode text-lg"></i> UPI & Wallets Supported
+                        </p>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 bg-white overflow-hidden border-b border-slate-100">
+        <div class="max-w-[1500px] mx-auto px-6 lg:px-10">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-[32px] md:text-[46px] font-black text-slate-900 tracking-tight mb-4">Discover the MakeMy Suite</h2>
+                <p class="text-[16px] md:text-[18px] text-slate-500 max-w-2xl mx-auto">Supercharge your productivity with our other free web utilities.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                <a href="#" class="group relative bg-slate-50 rounded-[32px] p-8 md:p-12 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 flex flex-col md:flex-row items-center gap-8 overflow-hidden reveal delay-100">
+                    <div class="w-28 h-28 md:w-36 md:h-36 shrink-0 bg-blue-600 rounded-[24px] flex items-center justify-center text-white shadow-lg shadow-blue-500/30 animate-float relative z-10">
+                        <i class="fa-solid fa-file-zipper text-[50px] md:text-[60px]"></i>
+                    </div>
+                    <div class="text-center md:text-left relative z-10">
+                        <div class="inline-block px-3 py-1 bg-blue-100 text-blue-700 font-bold rounded-full text-xs mb-3 tracking-wide uppercase">MakeMyZIP</div>
+                        <h3 class="text-[22px] md:text-[26px] font-bold text-slate-900 mb-2 tracking-tight">Create & Unzip Files</h3>
+                        <p class="text-[14px] md:text-[15px] text-slate-500 leading-relaxed mb-4">Compress folders into a ZIP file, or extract archive formats (RAR, 7Z) securely.</p>
+                        <span class="text-blue-600 font-semibold text-[14px] group-hover:underline">Launch App <i class="fa-solid fa-arrow-right ml-1 text-xs"></i></span>
+                    </div>
+                </a>
+
+                <a href="#" class="group relative bg-slate-50 rounded-[32px] p-8 md:p-12 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col md:flex-row items-center gap-8 overflow-hidden reveal delay-200">
+                    <div class="w-28 h-28 md:w-36 md:h-36 shrink-0 bg-emerald-600 rounded-[24px] flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 relative z-10 overflow-hidden border-4 border-emerald-400">
+                        <i class="fa-solid fa-qrcode text-[60px] md:text-[70px]"></i>
+                        <div class="animate-scan w-full h-full absolute top-0 left-0"></div>
+                    </div>
+                    <div class="text-center md:text-left relative z-10">
+                        <div class="inline-block px-3 py-1 bg-emerald-100 text-emerald-700 font-bold rounded-full text-xs mb-3 tracking-wide uppercase">MakeMyQR</div>
+                        <h3 class="text-[22px] md:text-[26px] font-bold text-slate-900 mb-2 tracking-tight">Generate Custom QR</h3>
+                        <p class="text-[14px] md:text-[15px] text-slate-500 leading-relaxed mb-4">Create dynamic QR codes for URLs, WiFi, VCards. Customize colors and logos easily.</p>
+                        <span class="text-emerald-600 font-semibold text-[14px] group-hover:underline">Launch App <i class="fa-solid fa-arrow-right ml-1 text-xs"></i></span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 md:py-40 bg-[#020617] text-white relative overflow-hidden">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#e5322d] rounded-full blur-[250px] opacity-10 pointer-events-none"></div>
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600 rounded-full blur-[200px] opacity-10 pointer-events-none"></div>
+        
+        <div class="max-w-[1500px] mx-auto px-6 lg:px-12 flex flex-col lg:flex-row items-center gap-20 relative z-10">
+            
+            <div class="w-full lg:w-1/2 text-center lg:text-left reveal">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 text-slate-300 font-bold text-xs uppercase tracking-widest mb-8">
+                    <i class="fa-solid fa-cloud"></i> Cloud Processing
+                </div>
+                <h2 class="text-[40px] md:text-[60px] font-black leading-[1.1] mb-8 tracking-tight text-white">
+                    Built for the future. <br>Works on <span class="text-[#e5322d]">Every Device</span>.
+                </h2>
+                <p class="text-[18px] md:text-[22px] text-slate-400 font-medium leading-relaxed mb-12">
+                    Our platform uses Next-Gen Cloud compute to process your PDFs securely. No installation. Flawless on iOS, Android, macOS, and Windows.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                    <button class="w-full sm:w-auto bg-[#e5322d] text-white px-10 py-4 rounded-xl font-bold text-[16px] hover:bg-[#cc2b26] transition shadow-[0_10px_30px_rgba(229,50,45,0.3)]">Start Processing</button>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-1/2 flex justify-center items-center min-h-[500px] relative reveal delay-200">
+                <div class="absolute w-[350px] h-[350px] md:w-[480px] md:h-[480px] rounded-full border border-slate-700/40 orbit-ring pointer-events-none"></div>
+                <div class="absolute w-[250px] h-[250px] md:w-[320px] md:h-[320px] rounded-full border-2 border-dashed border-slate-600/30 orbit-ring-reverse pointer-events-none"></div>
+
+                <div class="relative w-36 h-36 md:w-48 md:h-48 bg-slate-900 border border-slate-800 rounded-full flex flex-col items-center justify-center text-center shadow-[0_0_80px_rgba(229,50,45,0.3)] z-20">
+                    <div class="bg-gradient-to-br from-[#e5322d] to-[#b91c1c] text-white w-14 h-14 flex items-center justify-center rounded-xl mb-3 shadow-[0_0_20px_rgba(229,50,45,0.6)]">
+                        <i class="fa-solid fa-file-pdf text-2xl"></i>
+                    </div>
+                    <span class="text-white font-black text-sm tracking-widest uppercase">MakeMy<span class="text-[#e5322d]">PDFs</span></span>
+                </div>
+                
+                <div class="absolute top-10 left-[10%] w-16 h-16 bg-blue-600/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-blue-400 text-3xl animate-float-delay z-10 border border-blue-500/30"><i class="fa-brands fa-windows"></i></div>
+                <div class="absolute bottom-12 left-[15%] w-16 h-16 bg-green-600/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-green-400 text-3xl animate-float z-10 border border-green-500/30"><i class="fa-brands fa-android"></i></div>
+                <div class="absolute top-20 right-[10%] w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white text-3xl animate-float z-10 border border-white/20"><i class="fa-brands fa-apple"></i></div>
+                <div class="absolute bottom-20 right-[15%] w-16 h-16 bg-purple-600/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-purple-400 text-3xl animate-float-delay z-10 border border-purple-500/30"><i class="fa-solid fa-mobile-screen"></i></div>
+            </div>
+            
+        </div>
+    </section>
+
+    <footer class="bg-[#0f172a] text-slate-400 pt-24 pb-12 border-t border-slate-800">
+        <div class="max-w-[1600px] mx-auto px-6 lg:px-12">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-12 mb-20">
+                <div class="md:col-span-2 pr-0 md:pr-10">
+                    <a href="/" class="flex items-center gap-3 text-[28px] font-black tracking-tight text-white mb-8">
+                        <div class="bg-[#e5322d] text-white w-12 h-12 flex items-center justify-center rounded-xl shadow-[0_0_20px_rgba(229,50,45,0.4)]">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <span>MakeMy<span class="text-[#e5322d]">PDFs</span></span>
+                    </a>
+                    <p class="text-[16px] leading-relaxed mb-8">The most powerful, free PDF ecosystem on the web. Built by developers, for professionals. We make document management effortless.</p>
+                    <div class="flex gap-4">
+                        <a href="https://github.com/mnvchauhan/makemypdfs.git" target="_blank" class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-white hover:bg-[#e5322d] hover:shadow-[0_0_15px_rgba(229,50,45,0.5)] transition-all duration-300"><i class="fa-brands fa-github text-lg"></i></a>
+                        <a href="https://mnvchauhan.site" target="_blank" class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-white hover:bg-blue-600 hover:shadow-[0_0_15px_rgba(37,99,235,0.5)] transition-all duration-300"><i class="fa-solid fa-globe text-lg"></i></a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-bold text-white mb-8 uppercase tracking-widest text-xs">PDF Tools</h4>
+                    <ul class="flex flex-col gap-5 text-[15px]">
+                        <li><a href="#" class="hover:text-white transition">Merge & Split</a></li>
+                        <li><a href="#" class="hover:text-white transition">Compress PDF</a></li>
+                        <li><a href="#" class="hover:text-white transition">Word to PDF</a></li>
+                        <li><a href="#" class="hover:text-white transition">Protect PDF</a></li>
+                        <li><a href="#" class="hover:text-white transition">OCR PDF</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-8 uppercase tracking-widest text-xs">Ecosystem</h4>
+                    <ul class="flex flex-col gap-5 text-[15px]">
+                        <li><a href="#" class="hover:text-white transition">MakeMyPDFs</a></li>
+                        <li><a href="#" class="hover:text-white transition">MakeMyZIP</a></li>
+                        <li><a href="#" class="hover:text-white transition">MakeMyQR</a></li>
+                        <li><a href="#" class="hover:text-white transition">Developer API</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-8 uppercase tracking-widest text-xs">Company & Legal</h4>
+                    <ul class="flex flex-col gap-5 text-[15px]">
+                        <li><a href="#" class="hover:text-white transition">About Us</a></li>
+                        <li><a href="#" class="hover:text-white transition">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition">Contact Us</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-800 pt-10 flex flex-col md:flex-row justify-between items-center text-[14px] gap-4">
+                <p>© 2026 MakeMy Suite Inc. Crafted by Manav Chauhan in Delhi.</p>
             </div>
         </div>
     </footer>
 
-    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-[#18181b]/90 backdrop-blur-lg border-t border-[#27272a] flex justify-around items-center h-[85px] z-[100] pb-5 pt-2">
-        <a href="/" class="flex flex-col items-center justify-center text-[#e5322d] w-1/3">
-            <i class="fa-solid fa-house text-[22px] mb-1.5"></i>
-            <span class="text-[11px] font-bold">Home</span>
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-xl border-t border-slate-200 flex justify-around items-center h-[90px] z-[100] pb-6 pt-3 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+        <a href="/" class="flex flex-col items-center justify-center text-[#e5322d] w-1/4">
+            <i class="fa-solid fa-house text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">Home</span>
         </a>
-        <a href="#" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/3 transition-colors">
-            <i class="fa-solid fa-folder text-[22px] mb-1.5"></i>
-            <span class="text-[11px] font-semibold">Files</span>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-900 w-1/4 transition-colors">
+            <i class="fa-solid fa-layer-group text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">Tools</span>
         </a>
-        <a href="#" class="flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 w-1/3 transition-colors">
-            <i class="fa-solid fa-star text-[22px] mb-1.5"></i>
-            <span class="text-[11px] font-semibold">Pro</span>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-900 w-1/4 transition-colors">
+            <i class="fa-solid fa-code text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">API</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-900 w-1/4 transition-colors">
+            <i class="fa-regular fa-user text-[22px] mb-1.5"></i><span class="text-[11px] font-bold">Account</span>
         </a>
     </nav>
 
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({ pageLanguage: 'en', autoDisplay: false }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
     <script>
+        function translatePage(langCode, langName) {
+            var teCombo = document.querySelector('.goog-te-combo');
+            if (teCombo) {
+                teCombo.value = langCode;
+                teCombo.dispatchEvent(new Event('change'));
+                document.getElementById('current-lang').innerText = langName;
+                document.querySelectorAll('.lang-check').forEach(el => el.classList.add('hidden'));
+                const checkIcon = document.getElementById('check-' + langCode);
+                if(checkIcon) checkIcon.classList.remove('hidden');
+            } else {
+                setTimeout(() => translatePage(langCode, langName), 500);
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             const tabs = document.querySelectorAll('.filter-tab');
             const cards = document.querySelectorAll('.tool-card');
@@ -240,23 +619,42 @@
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
                     tabs.forEach(t => {
-                        t.classList.remove('active', 'bg-[#e5322d]', 'text-white', 'border-none', 'shadow-lg');
-                        t.classList.add('bg-[#0f172a]', 'text-slate-300', 'border', 'border-slate-700');
+                        t.classList.remove('bg-[#e5322d]', 'text-white', 'border-[#e5322d]', 'shadow-lg', 'shadow-red-500/20');
+                        t.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
                     });
 
-                    tab.classList.remove('bg-[#0f172a]', 'text-slate-300', 'border', 'border-slate-700');
-                    tab.classList.add('active', 'bg-[#e5322d]', 'text-white', 'border-none', 'shadow-lg');
+                    tab.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+                    tab.classList.add('bg-[#e5322d]', 'text-white', 'border-[#e5322d]', 'shadow-lg', 'shadow-red-500/20');
 
                     const filterValue = tab.getAttribute('data-filter');
                     cards.forEach(card => {
+                        card.classList.remove('active');
                         if (filterValue === 'all' || card.getAttribute('data-category') === filterValue) {
                             card.style.display = 'flex';
+                            setTimeout(() => card.classList.add('active'), 50);
                         } else {
                             card.style.display = 'none';
                         }
                     });
                 });
             });
+
+            // INTERSECTION OBSERVER FOR SCROLL ANIMATIONS
+            const revealElements = document.querySelectorAll('.reveal');
+            const revealOptions = { threshold: 0.15, rootMargin: "0px 0px -50px 0px" };
+
+            const revealOnScroll = new IntersectionObserver(function(entries, observer) {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target); 
+                });
+            }, revealOptions);
+
+            revealElements.forEach(el => revealOnScroll.observe(el));
+            
+            const defCheck = document.getElementById('check-en');
+            if(defCheck) defCheck.classList.remove('hidden');
         });
     </script>
 </body>
