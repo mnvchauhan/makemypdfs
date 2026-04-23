@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+<form id="tool-form" action="/api/ocr-pdf" method="POST" enctype="multipart/form-data" class="h-full flex flex-col w-full">
+    <div class="flex flex-col h-full w-full bg-[#f8fafc]">
+        
+        <div class="p-8 flex-grow flex flex-col items-center justify-center text-center">
+            <div class="mb-6 bg-teal-50 w-20 h-20 flex items-center justify-center rounded-2xl shadow-sm border border-teal-100">
+                <i class="fa-solid fa-eye text-teal-600 text-[32px]"></i>
+            </div>
+            
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <h2 class="text-[26px] font-bold text-slate-800">OCR PDF</h2>
+                <span class="bg-[#e5322d] text-white text-[10px] font-black px-2 py-1 rounded-md tracking-wider">PRO</span>
+            </div>
+
+            <p class="text-[14px] text-slate-500 leading-relaxed max-w-[250px]">
+                Make scanned PDFs searchable and selectable using advanced Optical Character Recognition.
+            </p>
+        </div>
+
+        <div class="p-6 mt-auto border-t border-slate-200 bg-white">
+            <button type="submit" id="submit-btn" class="w-full bg-[#e5322d] text-white font-bold py-5 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02]">
+                Apply OCR <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+        </div>
+        
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+    // Tell base.html how to handle this specific tool
+    window.toolConfig = { 
+        minFiles: 1, 
+        maxFiles: 1, // OCR is heavy, doing 1 at a time is safest for server memory
+        progressText: 'Scanning and recognizing text...', 
+        successTitle: 'PDF is now Searchable!', 
+        btnText: 'Download OCR PDF' 
+    };
+
+    // Customize the download button appearance for this tool
+    const downloadBtn = document.getElementById('download-btn');
+    if (downloadBtn) {
+        downloadBtn.innerHTML = '<i class="fa-solid fa-file-pdf text-3xl"></i> <span id="download-btn-text">Download OCR PDF</span>';
+        downloadBtn.className = "bg-[#e5322d] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#cc2b26] transition flex items-center gap-4 mb-12";
+    }
+{% endblock %}

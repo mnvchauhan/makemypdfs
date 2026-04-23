@@ -21,75 +21,169 @@
 {% endblock %}
 
 {% block extra_js %}
-    // Replace default upload UI with a massive, clean URL Input Box
-    try {
+    document.addEventListener("DOMContentLoaded", () => {
         const workspace = document.getElementById('upload-screen');
         if (workspace) {
+            // Build the Customizer UI
             workspace.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full w-full max-w-2xl mx-auto px-6">
-                    <h2 class="text-[36px] font-bold text-white mb-4">Add URL</h2>
-                    <p class="text-slate-400 mb-10 text-[18px]">Paste the URL of the webpage you want to convert to PDF</p>
+                <div class="flex flex-col lg:flex-row h-full w-full max-w-7xl mx-auto gap-8 px-4 pb-8">
                     
-                    <div class="w-full flex shadow-sm rounded-lg overflow-hidden border border-slate-700 focus-within:border-[#e5322d] focus-within:ring-1 focus-within:ring-[#e5322d] transition-all bg-[#1e293b]">
-                        <div class="bg-slate-800 px-5 flex items-center justify-center border-r border-slate-800">
-                            <i class="fa-solid fa-link text-gray-400"></i>
+                    <div class="w-full lg:w-1/3 flex flex-col gap-6 pt-4">
+                        <div>
+                            <h2 class="text-[28px] font-bold text-white mb-2">Configure PDF</h2>
+                            <p class="text-slate-400 text-[15px]">Enter a URL and customize your document layout.</p>
                         </div>
-                        <input type="url" id="website-url-input" placeholder="https://example.com" class="w-full px-5 py-4 text-[16px] outline-none text-white">
+                        
+                        <div class="w-full flex shadow-sm rounded-lg overflow-hidden border border-slate-700 focus-within:border-[#e5322d] bg-[#1e293b]">
+                            <div class="bg-slate-800 px-4 flex items-center justify-center border-r border-slate-800">
+                                <i class="fa-solid fa-link text-gray-400"></i>
+                            </div>
+                            <input type="url" id="website-url-input" placeholder="https://example.com" class="w-full px-4 py-3 text-[15px] outline-none text-white bg-[#1e293b]" autocomplete="off">
+                        </div>
+
+                        <div class="bg-slate-800 rounded-xl p-5 border border-slate-700 flex flex-col gap-4">
+                            <div>
+                                <label class="text-slate-300 text-sm font-bold mb-2 block">Page Size</label>
+                                <select id="page-size" class="w-full bg-[#1e293b] text-white border border-slate-600 rounded-lg px-3 py-2 outline-none focus:border-[#e5322d]">
+                                    <option value="A4">A4</option>
+                                    <option value="Letter">US Letter</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-slate-300 text-sm font-bold mb-2 block">Orientation</label>
+                                <select id="page-orientation" class="w-full bg-[#1e293b] text-white border border-slate-600 rounded-lg px-3 py-2 outline-none focus:border-[#e5322d]">
+                                    <option value="Portrait">Portrait</option>
+                                    <option value="Landscape">Landscape</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-slate-300 text-sm font-bold mb-2 block">Margins</label>
+                                <select id="page-margin" class="w-full bg-[#1e293b] text-white border border-slate-600 rounded-lg px-3 py-2 outline-none focus:border-[#e5322d]">
+                                    <option value="0mm">No Margins</option>
+                                    <option value="10mm">Small (10mm)</option>
+                                    <option value="20mm">Standard (20mm)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="button" id="convert-url-btn" class="w-full bg-[#e5322d] text-white font-bold py-4 rounded-lg text-[20px] flex items-center justify-center gap-3 shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02] mt-2">
+                            Convert to PDF <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="w-full lg:w-2/3 bg-slate-900 rounded-2xl border border-slate-700 flex flex-col items-center justify-center p-6 relative overflow-hidden min-h-[500px]">
+                        <div id="preview-placeholder" class="text-center text-slate-500">
+                            <i class="fa-solid fa-globe text-5xl mb-4 opacity-50"></i>
+                            <p>Enter a URL to see live preview</p>
+                            <p class="text-xs mt-2 opacity-70">(Sites like Google block previews, but conversion works!)</p>
+                        </div>
+
+                        <div id="paper-preview" class="hidden bg-white shadow-2xl transition-all duration-500 ease-in-out relative overflow-hidden" style="width: 100%; max-width: 400px; aspect-ratio: 1 / 1.414;">
+                            <div id="margin-overlay" class="absolute inset-0 pointer-events-none border-[0px] border-blue-500/30 transition-all duration-300 z-10"></div>
+                            <iframe id="live-iframe" class="origin-top-left absolute top-0 left-0 border-0 pointer-events-none" style="width: 1200px; height: 1697px; transform: scale(0.333);"></iframe>
+                        </div>
                     </div>
                 </div>
             `;
         }
-    } catch(e) {
-        console.error("UI Update Error:", e);
-    }
 
-    // Custom Submit Logic for URL
-    document.getElementById('convert-url-btn').addEventListener('click', function() {
-        const urlInput = document.getElementById('website-url-input').value;
+        // --- Logic to Update the Preview ---
+        const urlInput = document.getElementById('website-url-input');
+        const pageSize = document.getElementById('page-size');
+        const pageOrientation = document.getElementById('page-orientation');
+        const pageMargin = document.getElementById('page-margin');
         
-        if (!urlInput) {
-            alert("Please enter a valid URL first.");
-            return;
+        const paperPreview = document.getElementById('paper-preview');
+        const iframe = document.getElementById('live-iframe');
+        const placeholder = document.getElementById('preview-placeholder');
+        const marginOverlay = document.getElementById('margin-overlay');
+
+        function updatePreview() {
+            let url = urlInput.value.trim();
+            if (url) {
+                if (!url.startsWith('http')) url = 'https://' + url;
+                if (iframe.src !== url) iframe.src = url;
+                placeholder.classList.add('hidden');
+                paperPreview.classList.remove('hidden');
+            } else {
+                placeholder.classList.remove('hidden');
+                paperPreview.classList.add('hidden');
+            }
+
+            let isLandscape = pageOrientation.value === 'Landscape';
+            let ratio = pageSize.value === 'A4' ? (1 / 1.414) : (8.5 / 11); 
+            
+            if (isLandscape) {
+                paperPreview.style.aspectRatio = (1 / ratio).toString();
+                iframe.style.width = '1697px';
+                iframe.style.height = '1200px';
+            } else {
+                paperPreview.style.aspectRatio = ratio.toString();
+                iframe.style.width = '1200px';
+                iframe.style.height = '1697px';
+            }
+
+            let marginVal = parseInt(pageMargin.value.replace('mm', ''));
+            marginOverlay.style.borderWidth = (marginVal * 1.5) + 'px';
         }
 
-        const workspace = document.getElementById('workspace');
-        if (workspace) {
-            workspace.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full w-full">
-                    <i class="fa-solid fa-circle-notch fa-spin text-[60px] text-[#e5322d] mb-6"></i>
-                    <h2 class="text-[24px] font-bold text-white">Converting Webpage...</h2>
-                    <p class="text-slate-400 mt-2">Please wait while we capture the layout.</p>
-                </div>
-            `;
-        }
+        let typingTimer;
+        urlInput.addEventListener('keyup', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(updatePreview, 800); 
+        });
+        pageSize.addEventListener('change', updatePreview);
+        pageOrientation.addEventListener('change', updatePreview);
+        pageMargin.addEventListener('change', updatePreview);
 
-        const formData = new FormData();
-        formData.append('website_url', urlInput);
 
-        fetch('/api/html-to-pdf', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
+        // --- Submission Logic ---
+        const convertBtn = document.getElementById('convert-url-btn');
+        if (convertBtn) {
+            
+            // Block global form submission if user hits "Enter"
+            window.addEventListener('submit', function(e) { 
+                e.preventDefault(); 
+                e.stopImmediatePropagation(); 
+                convertBtn.click(); 
+            }, true);
+
+            convertBtn.addEventListener('click', function(e) {
+                e.preventDefault(); 
+                
+                let urlValue = urlInput.value.trim();
+                if (!urlValue) { alert("Please enter a valid URL first."); return; }
+
                 workspace.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full w-full">
-                        <i class="fa-solid fa-circle-check text-[70px] text-green-500 mb-6"></i>
-                        <h2 class="text-[28px] font-black text-white mb-8">Webpage Converted!</h2>
-                        <a href="${data.download_url}" class="bg-[#e5322d] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02] transition hover:scale-[1.02] transition flex items-center gap-4">
-                            <i class="fa-solid fa-file-pdf text-3xl"></i> Download PDF
-                        </a>
+                    <div class="flex flex-col items-center justify-center h-full w-full pb-10">
+                        <i class="fa-solid fa-circle-notch fa-spin text-[60px] text-[#e5322d] mb-6"></i>
+                        <h2 class="text-[24px] font-bold text-white">Converting Webpage...</h2>
+                        <p class="text-slate-400 mt-2">Applying layout: ${pageSize.value} | ${pageOrientation.value}</p>
                     </div>
                 `;
-            } else {
-                alert("Error: " + data.error);
-                location.reload(); 
-            }
-        })
-        .catch(error => {
-            alert("Server connection failed.");
-            location.reload();
-        });
+
+                const formData = new FormData();
+                formData.append('website_url', urlValue);
+                formData.append('page_size', pageSize.value);
+                formData.append('orientation', pageOrientation.value);
+                formData.append('margin', pageMargin.value);
+
+                fetch('/api/html-to-pdf', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        workspace.innerHTML = `
+                            <div class="flex flex-col items-center justify-center h-full w-full pb-10">
+                                <i class="fa-solid fa-circle-check text-[70px] text-green-500 mb-6"></i>
+                                <h2 class="text-[28px] font-black text-white mb-8">Webpage Converted!</h2>
+                                <a href="${data.download_url}" class="bg-[#e5322d] text-white text-[24px] font-bold py-6 px-14 rounded-lg shadow-lg hover:bg-[#cc2b26] transition hover:scale-[1.02] flex items-center gap-4">
+                                    <i class="fa-solid fa-file-pdf text-3xl"></i> Download PDF
+                                </a>
+                            </div>
+                        `;
+                    } else { alert("Error: " + data.error); location.reload(); }
+                }).catch(() => { alert("Server connection failed."); location.reload(); });
+            });
+        }
     });
 {% endblock %}
