@@ -25,4 +25,6 @@ urlpatterns = [
     path('api/pdf-to-pdfa', views.process_pdf_to_pdfa, name='process_pdf_to_pdfa'),
     path('api/sign-pdf', views.process_sign_pdf, name='process_sign_pdf'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('about/', views.about, name='about'),
+    
 ]

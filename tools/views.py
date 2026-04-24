@@ -1363,5 +1363,8 @@ def logout_user(request):
     logout(request)
     return redirect('login')
 
+def about(request):
+    return render(request, 'about.html')
+
 def dashboard_view(request):
     return render(request, 'dashboard.html')
