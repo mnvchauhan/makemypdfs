@@ -3,7 +3,7 @@ name: Deploy MakeMyPDFs to AWS
 on:
   push:
     branches:
-      - mnvchauhan  # NOTE: Agar teri branch ka naam 'master' hai, toh yahan 'master' likh dena
+      - mnvchauhan  # Tumhari branch ka naam
 
 jobs:
   deploy:
@@ -18,8 +18,8 @@ jobs:
           script: |
             cd makemypdfs
             
-            # Code ko update karo (Yahan bhi 'main' ki jagah 'master' kar dena agar teri branch master hai)
-            git pull origin main
+            # Yahan bhi 'mnvchauhan' branch pull karni hai
+            git pull origin mnvchauhan
             
             # Nayi Docker image build karo
             docker build -t makemypdfs-app .
