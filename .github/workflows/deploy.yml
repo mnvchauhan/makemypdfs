@@ -1,0 +1,31 @@
+name: Deploy MakeMyPDFs to AWS
+
+on:
+  push:
+    branches:
+      - mnvchauhan  # NOTE: Agar teri branch ka naam 'master' hai, toh yahan 'master' likh dena
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into AWS and Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST_IP }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd makemypdfs
+            
+            # Code ko update karo (Yahan bhi 'main' ki jagah 'master' kar dena agar teri branch master hai)
+            git pull origin main
+            
+            # Nayi Docker image build karo
+            docker build -t makemypdfs-app .
+            
+            # Purana container band karke delete karo (agar pehle se chal raha hai toh)
+            docker rm -f pdf-container || true
+            
+            # Naya container fresh code aur uploads folder ke sath chalu karo
+            docker run -d --name pdf-container -p 80:8000 -v $(pwd)/uploads:/app/uploads makemypdfs-app
